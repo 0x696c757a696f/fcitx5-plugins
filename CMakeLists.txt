@@ -138,6 +138,12 @@ set_target_properties(Chewing_static PROPERTIES
     IMPORTED_LOCATION "${PREBUILDER_LIB_DIR}/libchewing.a"
     INTERFACE_INCLUDE_DIRECTORIES "${PREBUILDER_INCLUDE_DIR}/chewing"
 )
+if (WIN32)
+    # System libraries the Rust standard library needs.
+    set_target_properties(Chewing_static PROPERTIES
+        INTERFACE_LINK_LIBRARIES "advapi32;bcrypt;kernel32;ntdll;userenv;ws2_32"
+    )
+endif()
 set(CHEWING_TARGET Chewing_static)
 add_subdirectory(fcitx5-chewing)
 endif()
@@ -188,6 +194,9 @@ set_target_properties(Hangul_static PROPERTIES
     IMPORTED_LOCATION "${PREBUILDER_LIB_DIR}/libhangul.a"
     INTERFACE_INCLUDE_DIRECTORIES "${PREBUILDER_INCLUDE_DIR}/hangul-1.0"
 )
+if (WIN32)
+    set_target_properties(Hangul_static PROPERTIES INTERFACE_LINK_LIBRARIES intl)
+endif()
 set(HANGUL_TARGET Hangul_static)
 add_subdirectory(fcitx5-hangul)
 endif()

@@ -48,6 +48,7 @@ jobs:
             mingw-w64-clang-${{ matrix.pkg_arch }}-nlohmann-json
             mingw-w64-clang-${{ matrix.pkg_arch }}-opencc
             mingw-w64-clang-${{ matrix.pkg_arch }}-pkgconf
+            mingw-w64-clang-${{ matrix.pkg_arch }}-rust
             mingw-w64-clang-${{ matrix.pkg_arch }}-zstd
 
       - name: Set up environment
@@ -76,6 +77,24 @@ jobs:
             -DENABLE_XDGAUTOSTART=OFF
           cmake --build build/fcitx5-${{ matrix.arch }}
           DESTDIR=$(cygpath -m "$PWD")/build/windows-${{ matrix.arch }} cmake --install build/fcitx5-${{ matrix.arch }}
+
+      - name: Cache dependencies
+        id: deps-key
+        shell: bash
+        run: echo "key=$(git submodule status deps | sha256sum | cut -c1-16)-$(sha256sum scripts/build-windows-deps.sh | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@v6
+        with:
+          path: cache/windows
+          key: deps-windows-${{ matrix.arch }}-${{ steps.deps-key.outputs.key }}
+
+      - name: Build dependencies
+        shell: bash
+        env:
+          CC: clang
+          CXX: clang++
+          MSYS_NO_PATHCONV: 1
+        run: bash -x ./scripts/build-windows-deps.sh ${{ matrix.arch }}
 
       - name: Build
         shell: bash
