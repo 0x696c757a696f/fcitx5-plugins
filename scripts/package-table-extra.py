@@ -1,5 +1,8 @@
 import os
+import shutil
+import subprocess
 import sys
+import tarfile
 
 extra_plugins = {
     "array": [
@@ -68,25 +71,26 @@ other_plugins = {
 }
 
 
-def ensure(command: str):
-    if os.system(command) != 0:
-        sys.exit(1)
-
-
 build_dir = os.getcwd()
+scripts_dir = os.path.dirname(os.path.abspath(__file__))
 
 # split table-extra to plugins and keep directory structures so the package script can be reused
 for repo, plugins in (("table-extra", extra_plugins), ("table-other", other_plugins)):
     for plugin, ims in plugins.items():
-        ensure(f"mkdir -p {plugin}/" + "data/share/fcitx5/{inputmethod,table}")
-        ensure(f"mkdir -p {plugin}/usr")
+        for sub in ("inputmethod", "table"):
+            os.makedirs(f"{plugin}/data/share/fcitx5/{sub}", exist_ok=True)
+        os.makedirs(f"{plugin}/usr", exist_ok=True)
 
         for im in ims:
-            ensure(f"mv {repo}/usr/share/fcitx5/inputmethod/{im}.conf {plugin}/data/share/fcitx5/inputmethod")
-            ensure(f"mv {repo}/usr/share/fcitx5/table/{im}.main.dict {plugin}/data/share/fcitx5/table")
+            shutil.move(f"{repo}/usr/share/fcitx5/inputmethod/{im}.conf", f"{plugin}/data/share/fcitx5/inputmethod")
+            shutil.move(f"{repo}/usr/share/fcitx5/table/{im}.main.dict", f"{plugin}/data/share/fcitx5/table")
 
-        os.chdir(f"{plugin}/usr")
-        ensure(f"python {build_dir}/../../scripts/generate-descriptor.py {ims[0]}")
-        os.chdir("../data")
-        ensure(f"tar cjf {build_dir}/{plugin}-any.tar.bz2 --no-xattrs *")
-        os.chdir(build_dir)
+        subprocess.run(
+            [sys.executable, os.path.join(scripts_dir, "generate-descriptor.py"), ims[0]],
+            cwd=f"{plugin}/usr",
+            check=True,
+        )
+        data_dir = os.path.join(plugin, "data")
+        with tarfile.open(f"{plugin}-any.tar.bz2", "w:bz2") as tar:
+            for name in sorted(os.listdir(data_dir)):
+                tar.add(os.path.join(data_dir, name), arcname=name)
