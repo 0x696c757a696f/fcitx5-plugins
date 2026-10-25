@@ -79,7 +79,7 @@ fi
 
 # m17n-db is plain data, released by m17n-cmake.
 [[ -f $CACHE_DIR/m17n-db-$ARCH.tar.bz2 ]] ||
-  curl --retry 3 -fsSL -o $CACHE_DIR/m17n-db-$ARCH.tar.bz2 \
+  curl --retry 3 -fsSL -o $(cygpath -m $CACHE_DIR)/m17n-db-$ARCH.tar.bz2 \
     https://github.com/fcitx-contrib/m17n-cmake/releases/download/latest/m17n-db.tar.bz2
 
 # anthy-unicode; its dictionary is built by autotools, so it comes from the macOS prebuilt data.
@@ -88,7 +88,7 @@ configure anthy-cmake \
   "-DCMAKE_C_FLAGS=-I$(cygpath -m $ROOT/patches/windows/anthy) -include pwd.h"
 cmake --build build/deps-$ARCH/anthy-cmake -- -k 0
 install_dep anthy-cmake
-curl --retry 3 -fsSL -o build/deps-$ARCH/anthy-macos.tar.bz2 \
+curl --retry 3 -fsSL -o $(cygpath -m $ROOT)/build/deps-$ARCH/anthy-macos.tar.bz2 \
   https://github.com/fcitx-contrib/fcitx5-prebuilder/releases/download/macos/anthy-cmake-arm64.tar.bz2
 tar xf build/deps-$ARCH/anthy-macos.tar.bz2 -C build/deps-$ARCH/anthy-cmake-install/usr share/anthy
 package_dep anthy-cmake
