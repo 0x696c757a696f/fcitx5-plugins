@@ -58,7 +58,7 @@ fi
 # libchewing
 if ! cached libchewing; then
 # A static libchewing has to export the Rust library it wraps.
-git -C deps/libchewing apply $ROOT/patches/windows/libchewing.patch
+git -C deps/libchewing apply $(cygpath -m $ROOT)/patches/windows/libchewing.patch
 configure libchewing -DBUILD_DOC=OFF -DWITH_SQLITE3=OFF
 cmake --build build/deps-$ARCH/libchewing
 install_dep libchewing
@@ -69,7 +69,7 @@ fi
 
 # m17n-lib, without loading external modules through dlopen
 if ! cached m17n-cmake; then
-git -C deps/m17n-cmake/m17n-lib apply $ROOT/patches/windows/m17n-lib.patch
+git -C deps/m17n-cmake/m17n-lib apply $(cygpath -m $ROOT)/patches/windows/m17n-lib.patch
 configure m17n-cmake \
   "-DCMAKE_C_FLAGS=-I$(cygpath -m $ROOT/patches/windows/m17n) -include glob.h -DM17NDIR=\\\"/usr/share/m17n\\\""
 cmake --build build/deps-$ARCH/m17n-cmake
