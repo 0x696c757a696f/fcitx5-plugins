@@ -8,6 +8,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/locking.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -27,6 +29,31 @@ static inline struct passwd *getpwuid(int uid) {
     (void)uid;
     pw.pw_dir = getenv("USERPROFILE");
     return pw.pw_dir ? &pw : NULL;
+}
+
+static inline int gethostname(char *name, size_t len) {
+    const char *host = getenv("COMPUTERNAME");
+    if (!host) {
+        host = "localhost";
+    }
+    strncpy(name, host, len);
+    return 0;
+}
+
+/* Only the blocking write lock priv_dic.c takes; closing the file releases it. */
+#define F_WRLCK 1
+#define F_SETLKW 7
+
+struct flock {
+    short l_type;
+    short l_whence;
+    off_t l_start;
+    off_t l_len;
+};
+
+static inline int fcntl(int fd, int cmd, struct flock *lock) {
+    (void)cmd;
+    return _locking(fd, _LK_LOCK, (long)lock->l_len);
 }
 
 static inline int anthy_windows_dprintf(int fd, const char *format, ...) {
