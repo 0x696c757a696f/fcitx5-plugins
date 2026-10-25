@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 import sys
 from typing import Any
 
@@ -53,4 +54,4 @@ with open(descriptor_path, "w") as f:
 
 if version:
     os.makedirs(f"{cwd}/plugin", exist_ok=True)
-    os.system(f"cp {descriptor_path} {cwd}/plugin/{plugin}.json")
+    shutil.copy(descriptor_path, f"{cwd}/plugin/{plugin}.json")

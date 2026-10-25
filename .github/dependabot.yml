@@ -8,3 +8,15 @@ updates:
       actions:
         patterns:
           - '*'
+
+  - package-ecosystem: gitsubmodule
+    directory: /
+    schedule:
+      interval: weekly
+    ignore:
+      # Must match the fcitx5 commit that fcitx5-windows-next ships, so it moves with that repository.
+      - dependency-name: fcitx5
+    groups:
+      submodules:
+        patterns:
+          - '*'

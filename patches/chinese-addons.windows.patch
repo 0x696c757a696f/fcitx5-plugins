@@ -1,0 +1,68 @@
+diff --git a/im/pinyin/pinyin.cpp b/im/pinyin/pinyin.cpp
+index 7047c16..c0e4c42 100644
+--- a/im/pinyin/pinyin.cpp
++++ b/im/pinyin/pinyin.cpp
+@@ -1073,7 +1073,7 @@ void PinyinEngine::loadBuiltInDict() {
+     {
+         auto file = standardPath.locate(StandardPathsType::PkgData,
+                                         "pinyin/chaizi.dict");
+-        loadDict(file, persistentTask_);
++        loadDict(file.string(), persistentTask_);
+     }
+     {
+         auto file =
+@@ -1083,7 +1083,7 @@ void PinyinEngine::loadBuiltInDict() {
+             file = standardPath.locate(StandardPathsType::Data,
+                                        LIBIME_INSTALL_PKGDATADIR "/extb.dict");
+         }
+-        loadDict(file, persistentTask_);
++        loadDict(file.string(), persistentTask_);
+     }
+     if (ime_->dict()->dictSize() !=
+         libime::TrieDictionary::UserDict + 1 + NumBuiltInDict) {
+@@ -1116,7 +1116,7 @@ void PinyinEngine::loadExtraDict() {
+             continue;
+         }
+         PINYIN_DEBUG() << "Loading extra dictionary: " << file.first;
+-        loadDict(file.second, tasks_);
++        loadDict(file.second.string(), tasks_);
+     }
+ }
+ 
+diff --git a/modules/chttrans/chttrans.cpp b/modules/chttrans/chttrans.cpp
+index 1e61e92..95948ff 100644
+--- a/modules/chttrans/chttrans.cpp
++++ b/modules/chttrans/chttrans.cpp
+@@ -273,15 +273,15 @@ const Configuration *Chttrans::getConfig() const {
+             std::string strBuf(std::istreambuf_iterator<char>(in), {});
+             const auto jv = nlohmann::json::parse(strBuf);
+             auto name = jv.at("name").get<std::string>();
+-            std::string description = file.first.stem();
++            std::string description = file.first.stem().string();
+             if (!name.empty()) {
+                 description = std::format("{0}: {1}", description,
+                                           C_("OpenCC Profile", name));
+             }
+-            profiles.emplace_back(file.first, std::move(description));
++            profiles.emplace_back(file.first.string(), std::move(description));
+         } catch (const std::exception &e) {
+             FCITX_WARN() << "Failed to parse " << file.first;
+-            profiles.emplace_back(file.first, file.first);
++            profiles.emplace_back(file.first.string(), file.first.string());
+         }
+     }
+     config_.openCCS2TProfile.annotation().setProfiles(profiles);
+diff --git a/tools/scel2org5.cpp b/tools/scel2org5.cpp
+index 2bcdba7..34df57a 100644
+--- a/tools/scel2org5.cpp
++++ b/tools/scel2org5.cpp
+@@ -44,6 +44,9 @@
+ #include <libkern/OSByteOrder.h>
+ #define le16toh(x) OSSwapLittleToHostInt16(x)
+ #define le32toh(x) OSSwapLittleToHostInt32(x)
++#elif defined(_WIN32)
++#define le16toh(x) (static_cast<uint16_t>(x))
++#define le32toh(x) (static_cast<uint32_t>(x))
+ #else
+ #include <sys/endian.h>
+ #endif

@@ -1,0 +1,12 @@
+diff --git a/src/addonloader/luaaddonstate.cpp b/src/addonloader/luaaddonstate.cpp
+index 0485bab..0f853a2 100644
+--- a/src/addonloader/luaaddonstate.cpp
++++ b/src/addonloader/luaaddonstate.cpp
+@@ -160,6 +160,7 @@ LuaAddonState::LuaAddonState(LibraryPtr luaLibrary, const std::string &name,
+             {"standardPathLocate", &LuaAddonState::standardPathLocate},
+             {"UTF16ToUTF8", &LuaAddonState::UTF16ToUTF8},
+             {"UTF8ToUTF16", &LuaAddonState::UTF8ToUTF16},
++            {nullptr, nullptr},
+         };
+         auto *addon = GetLuaAddonState(state);
+         luaL_newlib(addon->state_, fcitxlib);

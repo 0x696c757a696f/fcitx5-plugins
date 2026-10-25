@@ -24,7 +24,7 @@ jobs:
           python-version: '3.14'
 
       - name: Install dependencies
-        run: pip install ruff pyright dirhash
+        run: pip install ruff pyright dirhash pefile
 
       - name: Lint
         run: |
