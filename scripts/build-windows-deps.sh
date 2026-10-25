@@ -225,3 +225,25 @@ rm -rf build/deps-$ARCH/libkkc-install
 DESTDIR=$(cygpath -m $ROOT/build/deps-$ARCH/libkkc-install) meson install -C build/deps-$ARCH/libkkc
 package_dep libkkc
 fi
+
+# libmozc from fcitx5-mozc's CMake build, with the dictionary embedded
+if ! cached libmozc; then
+git -C fcitx5-mozc apply $(cygpath -m $ROOT)/patches/windows/libmozc.patch
+git -C fcitx5-mozc/mozc apply $(cygpath -m $ROOT)/patches/windows/mozc.patch
+git -C fcitx5-mozc/protobuf apply ../patches/protobuf.patch
+mozc_data=$ROOT/cache/mozc_data.inc
+[[ -f $mozc_data ]] || curl --retry 3 -fsSL -o $mozc_data https://github.com/fcitx-contrib/fcitx5-mozc/releases/download/latest/mozc_data.inc
+mozc_build=$ROOT/build/deps-$ARCH/libmozc
+mkdir -p $mozc_build/data_manager/oss
+cp $mozc_data $mozc_build/data_manager/oss/mozc_data.inc
+cmake -S fcitx5-mozc -B $mozc_build -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_INSTALL_PREFIX=/usr \
+  -DBUILD_MOZC_ADDON=OFF \
+  -DWIL_INCLUDE_DIR=$(cygpath -m $ROOT/deps/wil/include)
+cmake --build $mozc_build
+install_dep libmozc
+# Plugins link one archive of all the absl objects, as on macOS.
+llvm-ar rc $mozc_build-install/usr/lib/libabsl.a $(find $mozc_build/abseil-cpp -name '*.obj' | sort)
+package_dep libmozc
+fi

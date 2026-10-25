@@ -37,6 +37,7 @@ windows=(
   kkc
   lua
   m17n
+  mozc
   rime
   sayura
   skk

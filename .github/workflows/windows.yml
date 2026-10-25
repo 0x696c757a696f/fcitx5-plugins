@@ -123,7 +123,7 @@ jobs:
         id: deps-key
         shell: bash
         run: |
-          key=$( (git submodule status --recursive deps; git ls-files -s scripts/build-windows-deps.sh patches/windows) | sha256sum | cut -c1-16)
+          key=$( (git submodule status --recursive deps fcitx5-mozc; git ls-files -s scripts/build-windows-deps.sh patches/windows) | sha256sum | cut -c1-16)
           echo "key=$key" >> "$GITHUB_OUTPUT"
 
       - uses: actions/cache@v6
