@@ -5,14 +5,13 @@ on:
 
 jobs:
   build:
-    runs-on: windows-2025
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
-        arch: [x86_64, arm64]
         include:
-          - { arch: x86_64, cmake_arch: AMD64, pkg_arch: x86_64  }
-          - { arch: arm64, cmake_arch: ARM64, pkg_arch: aarch64 }
+          - { arch: x86_64, runner: windows-2025, cmake_arch: AMD64, pkg_arch: x86_64 }
+          - { arch: arm64, runner: windows-2025, cmake_arch: ARM64, pkg_arch: aarch64 }
 
     steps:
       - uses: actions/checkout@v7
@@ -55,7 +54,7 @@ jobs:
         shell: bash
         run: |
           cmake -B build/windows-${{ matrix.arch }} -G Ninja \
-            -DANTHY=OFF -DBAMBOO=OFF -DCHEWING=OFF -DCHINESE_ADDONS=OFF -DCSKK=OFF -DHANGUL=OFF -DJYUTPING=OFF -DKEYMAN=OFF -DKKC=OFF -DM17N=OFF -DMOZC=OFF -DRIME=OFF -DSKK=OFF -DTABLE_EXTRA=OFF -DZHUYIN=OFF \
+            $(./scripts/windows-options.sh) \
             -DCMAKE_BUILD_TYPE=Release \
             -DARCH=${{ matrix.cmake_arch }}
           cmake --build build/windows-${{ matrix.arch }}
@@ -75,35 +74,3 @@ jobs:
           name: artifact-windows
           path: |
             build/windows-${{ matrix.arch }}/*-any.tar.bz2
-
-      - name: Setup tmate session
-        if: ${{ failure() }}
-        uses: mxschmitt/action-tmate@v3
-
-  compare:
-    needs: build
-    if: ${{ github.ref != 'refs/heads/master' }}
-    uses: ./.github/workflows/compare.yml
-    with:
-      platform: windows
-
-  release:
-    needs: build
-    if: ${{ github.ref == 'refs/heads/master' }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v8
-        with:
-          pattern: artifact-windows*
-          merge-multiple: true
-
-      - name: Release
-        uses: 'marvinpinto/action-automatic-releases@latest'
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          automatic_release_tag: windows
-          prerelease: true
-          title: "Windows Build"
-          files: |
-            *.tar.bz2

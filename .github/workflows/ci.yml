@@ -4,16 +4,18 @@ on:
   push:
     branches:
       - master
-    tags:
-      - 'macos-[0-9]+.*'
   pull_request:
+  schedule:
+    - cron: '0 3 * * 1'
   workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   lint:
     runs-on: ubuntu-latest
-    outputs:
-      message: ${{ steps.commit-message.outputs.message }}
     steps:
       - uses: actions/checkout@v7
 
@@ -29,29 +31,46 @@ jobs:
           ruff check scripts
           pyright scripts/*.py
 
-      - name: Pass commit message
-        id: commit-message
-        run: |
-          if [[ "${{ github.event_name }}" == 'pull_request' ]]; then
-            echo "message=${{ github.event.pull_request.title }}" >> "$GITHUB_OUTPUT"
-          elif [[ "${{ github.ref }}" == 'refs/heads/master' ]]; then
-            message=$(echo "${{ github.event.head_commit.message }}" | head -n 1)
-            echo "message=$message" >> "$GITHUB_OUTPUT"
-          else
-            echo "message=!windows!js" >> "$GITHUB_OUTPUT"
-          fi
-
-  macos:
-    if: "!contains(needs.lint.outputs.message, '!macos')"
-    needs: lint
-    uses: ./.github/workflows/macos.yml
-
   windows:
-    if: "!contains(needs.lint.outputs.message, '!windows')"
     needs: lint
     uses: ./.github/workflows/windows.yml
 
-  js:
-    if: "!contains(needs.lint.outputs.message, '!js')"
-    needs: lint
-    uses: ./.github/workflows/js.yml
+  promote:
+    needs: windows
+    if: ${{ github.ref == 'refs/heads/upstream-sync' && github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Fast-forward master to the tested upstream sync
+        run: gh api "repos/$GH_REPO/git/refs/heads/master" -X PATCH -f sha="$GITHUB_SHA" -F force=false
+
+  release:
+    needs: [windows, promote]
+    if: >-
+      ${{ !cancelled() && needs.windows.result == 'success' &&
+      ((github.ref == 'refs/heads/master' && github.event_name != 'pull_request') || needs.promote.result == 'success') }}
+    uses: ./.github/workflows/release.yml
+    permissions:
+      contents: write
+
+  dependabot:
+    needs: windows
+    if: ${{ github.event_name == 'pull_request' && github.actor == 'dependabot[bot]' }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Merge Dependabot pull request
+        run: |
+          gh pr merge ${{ github.event.pull_request.number }} --squash --delete-branch \
+            --match-head-commit ${{ github.event.pull_request.head.sha }}
+          gh workflow run ci.yml --ref master
