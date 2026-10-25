@@ -18,6 +18,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           submodules: recursive
+          persist-credentials: false
 
       - uses: actions/setup-python@v7
         with:
@@ -32,11 +33,15 @@ jobs:
             mingw-w64-clang-${{ matrix.pkg_arch }}-boost
             mingw-w64-clang-${{ matrix.pkg_arch }}-clang
             mingw-w64-clang-${{ matrix.pkg_arch }}-cmake
+            mingw-w64-clang-${{ matrix.pkg_arch }}-dlfcn
             mingw-w64-clang-${{ matrix.pkg_arch }}-extra-cmake-modules
             mingw-w64-clang-${{ matrix.pkg_arch }}-fmt
+            mingw-w64-clang-${{ matrix.pkg_arch }}-gettext-runtime
             mingw-w64-clang-${{ matrix.pkg_arch }}-gettext-tools
+            mingw-w64-clang-${{ matrix.pkg_arch }}-libiconv
             mingw-w64-clang-${{ matrix.pkg_arch }}-libthai
             mingw-w64-clang-${{ matrix.pkg_arch }}-librime
+            mingw-w64-clang-${{ matrix.pkg_arch }}-libuv
             mingw-w64-clang-${{ matrix.pkg_arch }}-lua
             mingw-w64-clang-${{ matrix.pkg_arch }}-marisa
             mingw-w64-clang-${{ matrix.pkg_arch }}-ninja
@@ -53,12 +58,24 @@ jobs:
           echo "$root/${{ matrix.msystem }}/bin" | tr '[:upper:]' '[:lower:]' >> "$GITHUB_PATH"
           pip install dirhash pefile
 
-      - name: Install Fcitx5 dev package
+      - name: Build Fcitx5
         shell: bash
+        env:
+          CC: clang
+          CXX: clang++
+          MSYS_NO_PATHCONV: 1
         run: |
-          curl --retry 3 -fsSLO https://github.com/fcitx-contrib/fcitx5-windows/releases/download/latest/Fcitx5-${{ matrix.arch }}-dev.tar.bz2
-          mkdir -p build/windows-${{ matrix.arch }}/usr
-          tar xf Fcitx5-${{ matrix.arch }}-dev.tar.bz2 -C build/windows-${{ matrix.arch }}/usr
+          # Plugins link against the same fcitx5 commit that fcitx5-windows-next ships.
+          cmake -S fcitx5 -B build/fcitx5-${{ matrix.arch }} -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=/usr \
+            -DCMAKE_CXX_FLAGS=-fexperimental-library \
+            -DENABLE_DBUS=OFF -DENABLE_X11=OFF -DENABLE_WAYLAND=OFF -DENABLE_KEYBOARD=OFF \
+            -DENABLE_SERVER=OFF -DENABLE_TEST=OFF -DENABLE_TESTING_ADDONS=OFF -DBUILD_SPELL_DICT=OFF \
+            -DENABLE_DOC=OFF -DENABLE_LIBUUID=OFF -DENABLE_ENCHANT=OFF -DENABLE_EMOJI=OFF \
+            -DENABLE_XDGAUTOSTART=OFF
+          cmake --build build/fcitx5-${{ matrix.arch }}
+          DESTDIR=$(cygpath -m "$PWD")/build/windows-${{ matrix.arch }} cmake --install build/fcitx5-${{ matrix.arch }}
 
       - name: Build
         shell: bash
