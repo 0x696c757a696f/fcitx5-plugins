@@ -1,5 +1,5 @@
 diff --git a/src/engine.cpp b/src/engine.cpp
-index 4b8314e..7d0a304 100644
+index 4b8314e..7dd4dcf 100644
 --- a/src/engine.cpp
 +++ b/src/engine.cpp
 @@ -32,6 +32,7 @@
@@ -20,7 +20,23 @@ index 4b8314e..7d0a304 100644
  #include <sys/stat.h>
  #include <system_error>
  #include <unordered_map>
-@@ -323,6 +326,18 @@ void fcitx::KeymanKeyboardData::load() {
+@@ -135,7 +138,7 @@ std::set<std::string> listKeymapDirs() {
+         return std::filesystem::is_directory(path, ec);
+       });
+   for (const auto &[name, _] : dirs) {
+-    keymapDirs.insert(name);
++    keymapDirs.insert(name.string());
+   }
+   return keymapDirs;
+ }
+@@ -317,12 +320,24 @@ void fcitx::KeymanKeyboardData::load() {
+   if (!std::filesystem::is_regular_file(ldmlFile, ec)) {
+     ldmlFile.clear();
+   }
+-  ldmlFile_ = ldmlFile;
++  ldmlFile_ = ldmlFile.string();
+   if (!std::filesystem::is_regular_file(kmxPath, ec)) {
+     FCITX_KEYMAN_ERROR() << "Failed to find kmx file. " << metadata_.id;
      return;
    }
  
@@ -34,7 +50,7 @@ index 4b8314e..7d0a304 100644
 +    return;
 +  }
 +  km_core_status status_keyboard = km_core_keyboard_load_from_blob(
-+      kmxPath.string().c_str(), kmxData.data(), kmxData.size(), &keyboard_);
++      kmxPath.wstring().c_str(), kmxData.data(), kmxData.size(), &keyboard_);
 +#else
    UnixFD fd(open(kmxPath.string().c_str(), O_RDONLY));
    if (!fd.isValid()) {
