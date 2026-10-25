@@ -1,0 +1,13 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index ecd720b3..315ef839 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -243,7 +243,7 @@ endif()
+ install(FILES ${ALL_INC} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/chewing)
+ install(FILES ${PROJECT_BINARY_DIR}/chewing.pc
+     DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+-install(TARGETS libchewing
++install(TARGETS chewing_capi
+     EXPORT libchewingTargets
+     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}

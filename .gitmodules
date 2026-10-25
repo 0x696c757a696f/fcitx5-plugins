@@ -82,3 +82,15 @@
 [submodule "fcitx5"]
 	path = fcitx5
 	url = https://github.com/fcitx/fcitx5
+[submodule "deps/libhangul"]
+	path = deps/libhangul
+	url = https://github.com/libhangul/libhangul
+[submodule "deps/libchewing"]
+	path = deps/libchewing
+	url = https://github.com/fcitx-contrib/libchewing
+[submodule "deps/m17n-cmake"]
+	path = deps/m17n-cmake
+	url = https://github.com/fcitx-contrib/m17n-cmake
+[submodule "deps/anthy-cmake"]
+	path = deps/anthy-cmake
+	url = https://github.com/fcitx5-android/anthy-cmake

@@ -1,0 +1,120 @@
+diff --git a/src/engine.cpp b/src/engine.cpp
+index af3b121..3ccf016 100644
+--- a/src/engine.cpp
++++ b/src/engine.cpp
+@@ -38,7 +38,6 @@
+ #include <stdexcept>
+ #include <string>
+ #include <sys/types.h>
+-#include <sys/wait.h>
+ #include <unistd.h>
+ #include <utility>
+ 
+@@ -295,10 +294,11 @@ AnthyEngine::AnthyEngine(fcitx::Instance *instance)
+         },
+         0);
+     if constexpr (fcitx::isAndroid() || fcitx::isApple() ||
+-                  fcitx::isEmscripten()) {
++                  fcitx::isEmscripten() || fcitx::isWindows()) {
+         const auto &sp = fcitx::StandardPaths::global();
+         std::string anthy_conf = sp.locate(fcitx::StandardPathsType::Data,
+-                                           "anthy/anthy-unicode.conf");
++                                           "anthy/anthy-unicode.conf")
++                                     .string();
+         std::string anthy_prefix = fcitx::fs::dirName(anthy_conf);
+         // "CONFFILE" must be overridden first to change main config file path
+         anthy_conf_override("CONFFILE", anthy_conf.c_str());
+@@ -476,9 +476,10 @@ std::string AnthyEngine::fullFileName(const std::string &name) {
+     if (name.empty()) {
+         return {};
+     }
+-    return fcitx::StandardPaths::global().locate(
+-        fcitx::StandardPathsType::PkgData,
+-        fcitx::stringutils::joinPath("anthy", name));
++    return fcitx::StandardPaths::global()
++        .locate(fcitx::StandardPathsType::PkgData,
++                fcitx::stringutils::joinPath("anthy", name))
++        .string();
+ }
+ 
+ void AnthyEngine::reloadConfig() {
+diff --git a/src/state.cpp b/src/state.cpp
+index 135ab79..0099e6d 100644
+--- a/src/state.cpp
++++ b/src/state.cpp
+@@ -1364,15 +1364,15 @@ bool AnthyState::action_reconvert() {
+     }
+ 
+     const std::string surrounding_text(ic_->surroundingText().text());
+-    uint cursor_pos = ic_->surroundingText().cursor();
+-    uint anchor_pos = ic_->surroundingText().anchor();
++    unsigned int cursor_pos = ic_->surroundingText().cursor();
++    unsigned int anchor_pos = ic_->surroundingText().anchor();
+     int32_t relative_selected_length = 0;
+ 
+     if (cursor_pos == anchor_pos) {
+         if (engine_->clipboard()) {
+             auto primary_text =
+                 engine_->clipboard()->call<fcitx::IClipboard::primary>(ic_);
+-            uint new_anchor_pos = 0;
++            unsigned int new_anchor_pos = 0;
+             if (util::surrounding_get_anchor_pos_from_selection(
+                     surrounding_text, primary_text, cursor_pos,
+                     &new_anchor_pos)) {
+diff --git a/src/utils.cpp b/src/utils.cpp
+index 47eb64a..ccb2426 100644
+--- a/src/utils.cpp
++++ b/src/utils.cpp
+@@ -23,7 +23,6 @@
+ #include <string>
+ #include <string_view>
+ #include <sys/types.h>
+-#include <sys/wait.h>
+ #include <unistd.h>
+ #include <vector>
+ 
+@@ -202,7 +201,7 @@ void util::launch_program(std::string_view command) {
+     fcitx::startProcess(array);
+ }
+ 
+-bool util::surrounding_get_safe_delta(uint from, uint to, int32_t *delta) {
++bool util::surrounding_get_safe_delta(unsigned int from, unsigned int to, int32_t *delta) {
+     const int64_t kInt32AbsMax =
+         std::llabs(static_cast<int64_t>(std::numeric_limits<int32_t>::max()));
+     const int64_t kInt32AbsMin =
+@@ -224,7 +223,7 @@ bool util::surrounding_get_safe_delta(uint from, uint to, int32_t *delta) {
+ static bool search_anchor_pos_forward(const std::string &surrounding_text,
+                                       const std::string &selected_text,
+                                       size_t selected_chars_len,
+-                                      uint cursor_pos, uint *anchor_pos) {
++                                      unsigned int cursor_pos, unsigned int *anchor_pos) {
+ 
+     size_t len = fcitx::utf8::length(surrounding_text);
+     if (len < cursor_pos) {
+@@ -247,14 +246,14 @@ static bool search_anchor_pos_forward(const std::string &surrounding_text,
+ // Otherwise returns false.
+ bool search_anchor_pos_backward(const std::string &surrounding_text,
+                                 const std::string &selected_text,
+-                                size_t selected_chars_len, uint cursor_pos,
+-                                uint *anchor_pos) {
++                                size_t selected_chars_len, unsigned int cursor_pos,
++                                unsigned int *anchor_pos) {
+     if (cursor_pos < selected_chars_len) {
+         return false;
+     }
+ 
+     // Skip |iter| to (potential) anchor pos.
+-    const uint skip_count = cursor_pos - selected_chars_len;
++    const unsigned int skip_count = cursor_pos - selected_chars_len;
+     if (skip_count > cursor_pos) {
+         return false;
+     }
+@@ -271,7 +270,7 @@ bool search_anchor_pos_backward(const std::string &surrounding_text,
+ 
+ bool util::surrounding_get_anchor_pos_from_selection(
+     const std::string &surrounding_text, const std::string &selected_text,
+-    uint cursor_pos, uint *anchor_pos) {
++    unsigned int cursor_pos, unsigned int *anchor_pos) {
+     if (surrounding_text.empty()) {
+         return false;
+     }

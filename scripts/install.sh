@@ -25,10 +25,14 @@ macos=(
 )
 
 windows=(
+  anthy
+  chewing
   chinese-addons
   hallelujah
+  hangul
   jyutping
   lua
+  m17n
   rime
   sayura
   table-extra
@@ -129,6 +133,13 @@ for plugin in "${plugins[@]}"; do
     rm -rf $TARGET_DIR/$plugin/usr/share/icons
   fi
 done
+
+if [[ $PLATFORM == "windows" ]]; then
+  has_plugin anthy && extract_dep anthy anthy-cmake
+  has_plugin chewing && extract_dep chewing libchewing
+  has_plugin hangul && extract_dep hangul libhangul
+  has_plugin m17n && extract_dep m17n m17n-db
+fi
 
 if [[ $PLATFORM != "windows" ]]; then
 extract_dep anthy anthy-cmake

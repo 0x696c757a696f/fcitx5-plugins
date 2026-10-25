@@ -32,6 +32,7 @@ jobs:
           install: >-
             mingw-w64-clang-${{ matrix.pkg_arch }}-boost
             mingw-w64-clang-${{ matrix.pkg_arch }}-clang
+            mingw-w64-clang-${{ matrix.pkg_arch }}-corrosion
             mingw-w64-clang-${{ matrix.pkg_arch }}-cmake
             mingw-w64-clang-${{ matrix.pkg_arch }}-dlfcn
             mingw-w64-clang-${{ matrix.pkg_arch }}-extra-cmake-modules
@@ -48,6 +49,7 @@ jobs:
             mingw-w64-clang-${{ matrix.pkg_arch }}-nlohmann-json
             mingw-w64-clang-${{ matrix.pkg_arch }}-opencc
             mingw-w64-clang-${{ matrix.pkg_arch }}-pkgconf
+            mingw-w64-clang-${{ matrix.pkg_arch }}-rust
             mingw-w64-clang-${{ matrix.pkg_arch }}-zstd
 
       - name: Set up environment
@@ -77,15 +79,37 @@ jobs:
           cmake --build build/fcitx5-${{ matrix.arch }}
           DESTDIR=$(cygpath -m "$PWD")/build/windows-${{ matrix.arch }} cmake --install build/fcitx5-${{ matrix.arch }}
 
+      - name: Cache dependencies
+        id: deps-key
+        shell: bash
+        run: |
+          key=$( (git submodule status --recursive deps; git ls-files -s scripts/build-windows-deps.sh patches/windows) | sha256sum | cut -c1-16)
+          echo "key=$key" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@v6
+        with:
+          path: cache/windows
+          key: deps-windows-${{ matrix.arch }}-${{ steps.deps-key.outputs.key }}
+
+      - name: Build dependencies
+        shell: bash
+        env:
+          CC: clang
+          CXX: clang++
+          MSYS_NO_PATHCONV: 1
+        run: bash -x ./scripts/build-windows-deps.sh ${{ matrix.arch }}
+
       - name: Build
         shell: bash
         run: |
+          git apply --directory=fcitx5-anthy patches/anthy.windows.patch
           git apply --directory=libime patches/libime.patch
           git apply --directory=libime patches/libime.windows.patch
           git apply --directory=fcitx5-lua patches/lua.patch
           git apply --directory=fcitx5-chinese-addons patches/chinese-addons.patch
           git apply --directory=fcitx5-chinese-addons patches/chinese-addons.windows.patch
           git apply --directory=fcitx5-jyutping patches/jyutping.patch
+          git apply --directory=fcitx5-m17n patches/m17n.windows.patch
           git apply --directory=fcitx5-rime patches/rime.log.patch
           git apply --directory=fcitx5-rime patches/rime.windows.patch
           git apply --directory=fcitx5-table-other patches/table-other.patch

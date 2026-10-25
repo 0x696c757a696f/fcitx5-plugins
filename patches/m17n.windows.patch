@@ -1,0 +1,45 @@
+diff --git a/im/engine.cpp b/im/engine.cpp
+index 000b1b8..e27e7ad 100644
+--- a/im/engine.cpp
++++ b/im/engine.cpp
+@@ -8,6 +8,7 @@
+ #include "keysymname.h"
+ #include "overrideparser.h"
+ #include <cstddef>
++#include <cstdlib>
+ #include <cstdint>
+ #include <cstdio>
+ #include <cstring>
+@@ -293,6 +294,14 @@ M17NEngine::M17NEngine(Instance *instance)
+     : instance_(instance),
+       factory_([this](InputContext &ic) { return new M17NState(this, &ic); }) {
+     reloadConfig();
++#ifdef _WIN32
++    // m17n-db ships with the plugin, and m17n reads extra database directories from M17NDIR.
++    auto m17nDir =
++        StandardPaths::global().locate(StandardPathsType::Data, "m17n");
++    if (!m17nDir.empty()) {
++        _putenv_s("M17NDIR", m17nDir.generic_string().c_str());
++    }
++#endif
+     M17N_INIT();
+ 
+     auto file = StandardPaths::global().open(StandardPathsType::PkgData,
+@@ -432,7 +441,7 @@ void M17NState::command(MInputContext *context, MSymbol command) const {
+             return;
+         }
+ 
+-        long len = (long)mplist_value(context->plist);
++        long len = static_cast<long>(reinterpret_cast<intptr_t>(mplist_value(context->plist)));
+         long pos;
+         auto cursor = ic_->surroundingText().cursor();
+         if (len < 0) {
+@@ -457,7 +466,7 @@ void M17NState::command(MInputContext *context, MSymbol command) const {
+         }
+     } else if (command == Minput_delete_surrounding_text &&
+                ic_->capabilityFlags().test(CapabilityFlag::SurroundingText)) {
+-        int len = reinterpret_cast<long>(mplist_value(context->plist));
++        int len = static_cast<int>(reinterpret_cast<intptr_t>(mplist_value(context->plist)));
+         if (len < 0) {
+             ic_->deleteSurroundingText(len, -len);
+         } else if (len > 0) {

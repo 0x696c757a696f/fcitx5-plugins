@@ -93,6 +93,14 @@ option(ENABLE_GUI "" OFF)
 
 # anthy
 if (ANTHY)
+if (WIN32)
+    add_library(Anthy_static INTERFACE IMPORTED)
+    set_target_properties(Anthy_static PROPERTIES
+        INTERFACE_INCLUDE_DIRECTORIES "${PREBUILDER_INCLUDE_DIR}"
+        INTERFACE_LINK_LIBRARIES "${PREBUILDER_LIB_DIR}/libanthy-unicode.a;${PREBUILDER_LIB_DIR}/libanthydic-unicode.a"
+    )
+    set(ANTHY_TARGET Anthy_static)
+endif()
 add_subdirectory(fcitx5-anthy)
 endif()
 
@@ -138,6 +146,12 @@ set_target_properties(Chewing_static PROPERTIES
     IMPORTED_LOCATION "${PREBUILDER_LIB_DIR}/libchewing.a"
     INTERFACE_INCLUDE_DIRECTORIES "${PREBUILDER_INCLUDE_DIR}/chewing"
 )
+if (WIN32)
+    # System libraries the Rust standard library needs.
+    set_target_properties(Chewing_static PROPERTIES
+        INTERFACE_LINK_LIBRARIES "advapi32;bcrypt;dbghelp;kernel32;ntdll;unwind;userenv;ws2_32"
+    )
+endif()
 set(CHEWING_TARGET Chewing_static)
 add_subdirectory(fcitx5-chewing)
 endif()
@@ -188,6 +202,9 @@ set_target_properties(Hangul_static PROPERTIES
     IMPORTED_LOCATION "${PREBUILDER_LIB_DIR}/libhangul.a"
     INTERFACE_INCLUDE_DIRECTORIES "${PREBUILDER_INCLUDE_DIR}/hangul-1.0"
 )
+if (WIN32)
+    set_target_properties(Hangul_static PROPERTIES INTERFACE_LINK_LIBRARIES intl)
+endif()
 set(HANGUL_TARGET Hangul_static)
 add_subdirectory(fcitx5-hangul)
 endif()
@@ -215,6 +232,9 @@ set_target_properties(m17n_static PROPERTIES
     IMPORTED_LOCATION "${PREBUILDER_LIB_DIR}/libm17n.a"
     INTERFACE_INCLUDE_DIRECTORIES "${PREBUILDER_INCLUDE_DIR}"
 )
+if (WIN32)
+    set_target_properties(m17n_static PROPERTIES INTERFACE_LINK_LIBRARIES dl)
+endif()
 set(M17N_TARGET m17n_static)
 add_subdirectory(fcitx5-m17n)
 endif()
