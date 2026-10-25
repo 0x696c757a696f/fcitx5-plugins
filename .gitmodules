@@ -109,3 +109,6 @@
 [submodule "deps/keyman"]
 	path = deps/keyman
 	url = https://github.com/keymanapp/keyman
+[submodule "deps/libskk"]
+	path = deps/libskk
+	url = https://github.com/ueno/libskk

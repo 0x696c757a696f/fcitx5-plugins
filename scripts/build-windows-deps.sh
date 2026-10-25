@@ -202,3 +202,15 @@ Cflags: -I\${includedir} -I\${includedir}/keyman -DU_STATIC_IMPLEMENTATION -DKM_
 PC
 package_dep keyman-core
 fi
+
+# libskk, static and without GObject introspection
+if ! cached libskk; then
+git -C deps/libskk apply $(cygpath -m $ROOT)/patches/windows/libskk.patch
+PKG_CONFIG_PATH=$(cygpath -m $USR/lib/pkgconfig) meson setup build/deps-$ARCH/libskk deps/libskk \
+  --buildtype=release --default-library=static --prefix=C:/usr \
+  -Ddocs=disabled -Dtests=false
+ninja -C build/deps-$ARCH/libskk
+rm -rf build/deps-$ARCH/libskk-install
+DESTDIR=$(cygpath -m $ROOT/build/deps-$ARCH/libskk-install) meson install -C build/deps-$ARCH/libskk
+package_dep libskk
+fi
