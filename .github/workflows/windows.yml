@@ -61,6 +61,8 @@ jobs:
           root=$(cygpath -m '${{ steps.msys2.outputs.msys2-location }}')
           echo "MSYS2_ROOT=$root" >> "$GITHUB_ENV"
           echo "$root/${{ matrix.msystem }}/bin" | tr '[:upper:]' '[:lower:]' >> "$GITHUB_PATH"
+          # MSYS2 ships a trimmed go binary that needs GOROOT spelled out.
+          echo "GOROOT=$root/$(echo '${{ matrix.msystem }}' | tr '[:upper:]' '[:lower:]')/lib/go" >> "$GITHUB_ENV"
           pip install dirhash meson pefile
 
       - name: Build Fcitx5

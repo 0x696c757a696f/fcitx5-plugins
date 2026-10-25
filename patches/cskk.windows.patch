@@ -1,5 +1,5 @@
 diff --git a/src/cskk.cpp b/src/cskk.cpp
-index 4a426a1..0b7b958 100644
+index 4a426a1..1372665 100644
 --- a/src/cskk.cpp
 +++ b/src/cskk.cpp
 @@ -49,6 +49,7 @@
@@ -29,3 +29,31 @@ index 4a426a1..0b7b958 100644
    reloadConfig();
    instance_->inputContextManager().registerProperty("cskkcontext", &factory_);
  }
+@@ -236,8 +249,9 @@ void FcitxCskkEngine::loadDictionary() {
+ #if FCITX_HAS_STANDARDPATHS
+     std::string_view partialpath = path;
+     if (stringutils::consumePrefix(partialpath, "$FCITX_CONFIG_DIR/")) {
+-      path = StandardPaths::global().userDirectory(StandardPathsType::PkgData) /
+-             partialpath;
++      path = (StandardPaths::global().userDirectory(StandardPathsType::PkgData) /
++              partialpath)
++                 .string();
+     }
+ #else
+     constexpr char configDir[] = "$FCITX_CONFIG_DIR/";
+diff --git a/src/cskkconfig.h b/src/cskkconfig.h
+index faa55a8..ecb64ff 100644
+--- a/src/cskkconfig.h
++++ b/src/cskkconfig.h
+@@ -75,9 +75,9 @@ struct InputModeAnnotation : public EnumAnnotation {
+ struct FcitxCskkRuleAnnotation : public EnumAnnotation {
+   void dumpDescription(RawConfig &config) const {
+     EnumAnnotation::dumpDescription(config);
+-    uint length;
++    unsigned int length;
+     auto rules = skk_get_rules(&length);
+-    for (uint i = 0; i < length; i++) {
++    for (unsigned int i = 0; i < length; i++) {
+       config.setValueByPath("Enum/" + std::to_string(i), rules[i].id);
+       config.setValueByPath("EnumI18n/" + std::to_string(i), rules[i].name);
+     }
