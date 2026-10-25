@@ -1,8 +1,29 @@
 diff --git a/src/skk.cpp b/src/skk.cpp
-index df9c007..a96d534 100644
+index df9c007..ff366b2 100644
 --- a/src/skk.cpp
 +++ b/src/skk.cpp
-@@ -331,6 +331,15 @@ SkkEngine::SkkEngine(Instance *instance)
+@@ -12,6 +12,7 @@
+ #include <cstdint>
+ #include <cstdio>
+ #include <cstring>
++#include <filesystem>
+ #include <istream>
+ #include <memory>
+ #include <stdexcept>
+@@ -57,6 +58,12 @@ namespace {
+ 
+ FCITX_DEFINE_LOG_CATEGORY(skk_logcategory, "skk");
+ 
++// GLib takes UTF-8 file names on Windows rather than the ANSI code page.
++std::string utf8Path(const std::filesystem::path &path) {
++    auto u8 = path.u8string();
++    return {u8.begin(), u8.end()};
++}
++
+ Text skkContextGetPreedit(SkkContext *context) {
+     Text preedit;
+ 
+@@ -331,6 +338,15 @@ SkkEngine::SkkEngine(Instance *instance)
            newState->applyConfig();
            return newState;
        }) {
@@ -12,30 +33,28 @@ index df9c007..a96d534 100644
 +        StandardPaths::global().locate(StandardPathsType::Data, "libskk/rules");
 +    if (!ruleDir.empty()) {
 +        g_setenv("LIBSKK_DATA_PATH",
-+                 ruleDir.parent_path().generic_string().c_str(), FALSE);
++                 utf8Path(ruleDir.parent_path()).c_str(), FALSE);
 +    }
 +#endif
      skk_init();
  
      modeAction_ = std::make_unique<SkkModeAction>(this);
-@@ -539,13 +548,15 @@ void SkkEngine::loadDictionary() {
+@@ -539,13 +555,13 @@ void SkkEngine::loadDictionary() {
  
              std::string_view partialpath = path;
              if (stringutils::consumePrefix(partialpath, "$FCITX_CONFIG_DIR/")) {
 -                path = StandardPaths::global().userDirectory(
 -                           StandardPathsType::PkgData) /
 -                       partialpath;
-+                path = (StandardPaths::global().userDirectory(
-+                            StandardPathsType::PkgData) /
-+                        partialpath)
-+                           .string();
++                path = utf8Path(StandardPaths::global().userDirectory(
++                                    StandardPathsType::PkgData) /
++                                partialpath);
              } else if (stringutils::consumePrefix(partialpath,
                                                    "$XDG_DATA_DIRS/")) {
 -                path = StandardPaths::global().locate(StandardPathsType::Data,
 -                                                      partialpath);
-+                path = StandardPaths::global()
-+                           .locate(StandardPathsType::Data, partialpath)
-+                           .string();
++                path = utf8Path(StandardPaths::global().locate(
++                    StandardPathsType::Data, partialpath));
              }
  
              if (mode == 1) {
