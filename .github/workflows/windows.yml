@@ -102,12 +102,14 @@ jobs:
       - name: Build
         shell: bash
         run: |
+          git apply --directory=fcitx5-anthy patches/anthy.windows.patch
           git apply --directory=libime patches/libime.patch
           git apply --directory=libime patches/libime.windows.patch
           git apply --directory=fcitx5-lua patches/lua.patch
           git apply --directory=fcitx5-chinese-addons patches/chinese-addons.patch
           git apply --directory=fcitx5-chinese-addons patches/chinese-addons.windows.patch
           git apply --directory=fcitx5-jyutping patches/jyutping.patch
+          git apply --directory=fcitx5-m17n patches/m17n.windows.patch
           git apply --directory=fcitx5-rime patches/rime.log.patch
           git apply --directory=fcitx5-rime patches/rime.windows.patch
           git apply --directory=fcitx5-table-other patches/table-other.patch
