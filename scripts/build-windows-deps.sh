@@ -237,7 +237,7 @@ sed -i 's/\r$//' fcitx5-mozc/scripts/*.sh
 mozc_data=$ROOT/cache/mozc_data.inc
 # curl may be a native MSYS2 build, which needs a Windows path.
 [[ -f $mozc_data ]] || curl --retry 3 -fsSL -o $(cygpath -m $mozc_data) https://github.com/fcitx-contrib/fcitx5-mozc/releases/download/latest/mozc_data.inc
-mozc_build=$ROOT/build/deps-$ARCH/libmozc
+mozc_build=build/deps-$ARCH/libmozc
 mkdir -p $mozc_build/data_manager/oss
 cp $mozc_data $mozc_build/data_manager/oss/mozc_data.inc
 cmake -S fcitx5-mozc -B $mozc_build -G Ninja \
@@ -248,6 +248,7 @@ cmake -S fcitx5-mozc -B $mozc_build -G Ninja \
 cmake --build $mozc_build
 install_dep libmozc
 # Plugins link one archive of all the absl objects, as on macOS.
-llvm-ar rc $mozc_build-install/usr/lib/libabsl.a $(find $mozc_build/abseil-cpp -name '*.obj' | sort)
+find $mozc_build/abseil-cpp -name '*.obj' | sort > $mozc_build/absl-objects.txt
+llvm-ar rc $mozc_build-install/usr/lib/libabsl.a @$mozc_build/absl-objects.txt
 package_dep libmozc
 fi
