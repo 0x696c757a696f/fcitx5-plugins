@@ -1,5 +1,5 @@
 diff --git a/src/engine.cpp b/src/engine.cpp
-index af3b121..614f100 100644
+index af3b121..3ccf016 100644
 --- a/src/engine.cpp
 +++ b/src/engine.cpp
 @@ -38,7 +38,6 @@
@@ -10,7 +10,7 @@ index af3b121..614f100 100644
  #include <unistd.h>
  #include <utility>
  
-@@ -295,7 +294,7 @@ AnthyEngine::AnthyEngine(fcitx::Instance *instance)
+@@ -295,10 +294,11 @@ AnthyEngine::AnthyEngine(fcitx::Instance *instance)
          },
          0);
      if constexpr (fcitx::isAndroid() || fcitx::isApple() ||
@@ -18,7 +18,26 @@ index af3b121..614f100 100644
 +                  fcitx::isEmscripten() || fcitx::isWindows()) {
          const auto &sp = fcitx::StandardPaths::global();
          std::string anthy_conf = sp.locate(fcitx::StandardPathsType::Data,
-                                            "anthy/anthy-unicode.conf");
+-                                           "anthy/anthy-unicode.conf");
++                                           "anthy/anthy-unicode.conf")
++                                     .string();
+         std::string anthy_prefix = fcitx::fs::dirName(anthy_conf);
+         // "CONFFILE" must be overridden first to change main config file path
+         anthy_conf_override("CONFFILE", anthy_conf.c_str());
+@@ -476,9 +476,10 @@ std::string AnthyEngine::fullFileName(const std::string &name) {
+     if (name.empty()) {
+         return {};
+     }
+-    return fcitx::StandardPaths::global().locate(
+-        fcitx::StandardPathsType::PkgData,
+-        fcitx::stringutils::joinPath("anthy", name));
++    return fcitx::StandardPaths::global()
++        .locate(fcitx::StandardPathsType::PkgData,
++                fcitx::stringutils::joinPath("anthy", name))
++        .string();
+ }
+ 
+ void AnthyEngine::reloadConfig() {
 diff --git a/src/state.cpp b/src/state.cpp
 index 135ab79..0099e6d 100644
 --- a/src/state.cpp
