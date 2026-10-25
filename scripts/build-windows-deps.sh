@@ -228,9 +228,12 @@ fi
 
 # libmozc from fcitx5-mozc's CMake build, with the dictionary embedded
 if ! cached libmozc; then
-git -C fcitx5-mozc apply $(cygpath -m $ROOT)/patches/windows/libmozc.patch
-git -C fcitx5-mozc/mozc apply $(cygpath -m $ROOT)/patches/windows/mozc.patch
-git -C fcitx5-mozc/protobuf apply ../patches/protobuf.patch
+# Mozc forces LF line endings while the patches are checked out with CRLF.
+git -C fcitx5-mozc apply --ignore-whitespace $(cygpath -m $ROOT)/patches/windows/libmozc.patch
+git -C fcitx5-mozc/mozc apply --ignore-whitespace $(cygpath -m $ROOT)/patches/windows/mozc.patch
+git -C fcitx5-mozc/protobuf apply --ignore-whitespace ../patches/protobuf.patch
+# Git checks fcitx5-mozc out with CRLF, which bash rejects in its generator scripts.
+sed -i 's/\r$//' fcitx5-mozc/scripts/*.sh
 mozc_data=$ROOT/cache/mozc_data.inc
 [[ -f $mozc_data ]] || curl --retry 3 -fsSL -o $mozc_data https://github.com/fcitx-contrib/fcitx5-mozc/releases/download/latest/mozc_data.inc
 mozc_build=$ROOT/build/deps-$ARCH/libmozc
