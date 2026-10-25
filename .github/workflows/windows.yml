@@ -33,6 +33,7 @@ jobs:
             bison
             mingw-w64-clang-${{ matrix.pkg_arch }}-boost
             mingw-w64-clang-${{ matrix.pkg_arch }}-cbindgen
+            mingw-w64-clang-${{ matrix.pkg_arch }}-ccache
             mingw-w64-clang-${{ matrix.pkg_arch }}-clang
             mingw-w64-clang-${{ matrix.pkg_arch }}-corrosion
             mingw-w64-clang-${{ matrix.pkg_arch }}-cmake
@@ -57,6 +58,7 @@ jobs:
             mingw-w64-clang-${{ matrix.pkg_arch }}-zstd
 
       - name: Set up environment
+        id: env
         shell: bash
         run: |
           root=$(cygpath -m '${{ steps.msys2.outputs.msys2-location }}')
@@ -68,8 +70,26 @@ jobs:
           # MSYS2 ships a trimmed go binary that needs GOROOT spelled out.
           echo "GOROOT=$root/$(echo '${{ matrix.msystem }}' | tr '[:upper:]' '[:lower:]')/lib/go" >> "$GITHUB_ENV"
           pip install dirhash meson pefile
+          echo "CCACHE_DIR=$(cygpath -m "$PWD")/.ccache" >> "$GITHUB_ENV"
+          echo "CCACHE_BASEDIR=$(cygpath -m "$PWD")" >> "$GITHUB_ENV"
+          echo "CCACHE_MAXSIZE=2G" >> "$GITHUB_ENV"
+          echo "fcitx5=$(git rev-parse HEAD:fcitx5)" >> "$GITHUB_OUTPUT"
+
+      # Fcitx5 only changes when its pin does, so reuse the installed tree.
+      - uses: actions/cache@v6
+        id: fcitx5-cache
+        with:
+          path: build/fcitx5-install-${{ matrix.arch }}
+          key: fcitx5-windows-${{ matrix.arch }}-${{ steps.env.outputs.fcitx5 }}-${{ hashFiles('.github/workflows/windows.yml') }}
+
+      - uses: actions/cache/restore@v6
+        with:
+          path: .ccache
+          key: ccache-windows-${{ matrix.arch }}-${{ github.run_id }}
+          restore-keys: ccache-windows-${{ matrix.arch }}-
 
       - name: Build Fcitx5
+        if: steps.fcitx5-cache.outputs.cache-hit != 'true'
         shell: bash
         env:
           CC: clang
@@ -84,9 +104,16 @@ jobs:
             -DENABLE_DBUS=OFF -DENABLE_X11=OFF -DENABLE_WAYLAND=OFF -DENABLE_KEYBOARD=OFF \
             -DENABLE_SERVER=OFF -DENABLE_TEST=OFF -DENABLE_TESTING_ADDONS=OFF -DBUILD_SPELL_DICT=OFF \
             -DENABLE_DOC=OFF -DENABLE_LIBUUID=OFF -DENABLE_ENCHANT=OFF -DENABLE_EMOJI=OFF \
-            -DENABLE_XDGAUTOSTART=OFF
+            -DENABLE_XDGAUTOSTART=OFF \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           cmake --build build/fcitx5-${{ matrix.arch }}
-          DESTDIR=$(cygpath -m "$PWD")/build/windows-${{ matrix.arch }} cmake --install build/fcitx5-${{ matrix.arch }}
+          DESTDIR=$(cygpath -m "$PWD")/build/fcitx5-install-${{ matrix.arch }} cmake --install build/fcitx5-${{ matrix.arch }}
+
+      - name: Install Fcitx5
+        shell: bash
+        run: |
+          mkdir -p build/windows-${{ matrix.arch }}
+          cp -r build/fcitx5-install-${{ matrix.arch }}/. build/windows-${{ matrix.arch }}/
 
       - name: Cache dependencies
         id: deps-key
@@ -131,12 +158,20 @@ jobs:
           cmake -B build/windows-${{ matrix.arch }} -G Ninja \
             $(./scripts/windows-options.sh) \
             -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DARCH=${{ matrix.cmake_arch }}
           # Tools built in the tree generate data and need the Fcitx5 DLLs.
           # Keep going so one run reports every compile error.
           PATH="$PWD/build/windows-${{ matrix.arch }}/usr/bin:$PATH" \
             cmake --build build/windows-${{ matrix.arch }} -- -k 0
           bash -x ./scripts/install.sh windows ${{ matrix.arch }}
+
+      # Saved even when the build fails, so the next attempt only recompiles what changed.
+      - uses: actions/cache/save@v6
+        if: always()
+        with:
+          path: .ccache
+          key: ccache-windows-${{ matrix.arch }}-${{ github.run_id }}
 
       - name: Upload arch-specific artifact
         uses: actions/upload-artifact@v7
