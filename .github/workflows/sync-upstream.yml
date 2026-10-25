@@ -35,7 +35,12 @@ jobs:
             exit 0
           fi
           # Workflows are Windows-only here and maintained in this fork, so upstream's are skipped.
-          git diff --binary "$old" "$new" -- . ':!.github' ':!renovate.json' > upstream.patch
+          # Submodules are updated by Dependabot here, so upstream's pins are skipped too.
+          excludes=(':!.github' ':!renovate.json')
+          for path in $(git config -f .gitmodules --get-regexp '^submodule\..*\.path$' | cut -d' ' -f2); do
+            excludes+=(":!$path")
+          done
+          git diff --binary "$old" "$new" -- . "${excludes[@]}" > upstream.patch
           if [[ -s upstream.patch ]] && ! git apply --index -3 upstream.patch; then
             body="Applying fcitx-contrib/fcitx5-plugins $old..$new conflicts with this fork. Resolve it by hand and update .upstream-commit."
             if [[ -z "$(gh issue list --state open --search 'Upstream sync conflict in:title' --json number -q '.[].number')" ]]; then

@@ -6,9 +6,11 @@ forked from [fcitx-contrib/fcitx5-plugins](https://github.com/fcitx-contrib/fcit
 
 * Every build of `master` is published as a dated `windows-YYYYMMDD-N` release,
   and the `windows` release always points to the newest one.
-* `Sync upstream` applies new upstream commits (outside `.github`) every day on the
+* `Sync upstream` applies new upstream commits (outside `.github` and the submodules) every day on the
   `upstream-sync` branch. Once the Windows build passes there, `master` is fast-forwarded and released.
-* Dependabot updates the GitHub Actions. Its pull requests are merged when the build passes.
+* Dependabot updates the GitHub Actions and every submodule to its latest commit each week.
+  Its pull requests are merged when the build passes. `fcitx5` is the exception: it stays on the
+  commit that fcitx5-windows-next ships, so the plugins match the product's ABI.
 
 ## Plugins
 
