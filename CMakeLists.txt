@@ -97,7 +97,7 @@ if (WIN32)
     add_library(Anthy_static INTERFACE IMPORTED)
     set_target_properties(Anthy_static PROPERTIES
         INTERFACE_INCLUDE_DIRECTORIES "${PREBUILDER_INCLUDE_DIR}"
-        INTERFACE_LINK_LIBRARIES "${PREBUILDER_LIB_DIR}/libanthy-unicode.a;${PREBUILDER_LIB_DIR}/libanthydic-unicode.a;mman"
+        INTERFACE_LINK_LIBRARIES "${PREBUILDER_LIB_DIR}/libanthy-unicode.a;${PREBUILDER_LIB_DIR}/libanthydic-unicode.a"
     )
     set(ANTHY_TARGET Anthy_static)
 endif()

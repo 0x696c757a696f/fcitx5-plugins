@@ -44,7 +44,6 @@ jobs:
             mingw-w64-clang-${{ matrix.pkg_arch }}-librime
             mingw-w64-clang-${{ matrix.pkg_arch }}-libuv
             mingw-w64-clang-${{ matrix.pkg_arch }}-lua
-            mingw-w64-clang-${{ matrix.pkg_arch }}-mman-win32
             mingw-w64-clang-${{ matrix.pkg_arch }}-marisa
             mingw-w64-clang-${{ matrix.pkg_arch }}-ninja
             mingw-w64-clang-${{ matrix.pkg_arch }}-nlohmann-json
@@ -83,7 +82,9 @@ jobs:
       - name: Cache dependencies
         id: deps-key
         shell: bash
-        run: echo "key=$(git submodule status deps | sha256sum | cut -c1-16)-$(sha256sum scripts/build-windows-deps.sh | cut -c1-16)" >> "$GITHUB_OUTPUT"
+        run: |
+          key=$( (git submodule status --recursive deps; git ls-files -s scripts/build-windows-deps.sh patches/windows) | sha256sum | cut -c1-16)
+          echo "key=$key" >> "$GITHUB_OUTPUT"
 
       - uses: actions/cache@v6
         with:
