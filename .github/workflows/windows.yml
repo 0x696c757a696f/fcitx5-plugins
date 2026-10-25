@@ -82,6 +82,7 @@ jobs:
         run: |
           git apply --directory=libime patches/libime.patch
           git apply --directory=fcitx5-chinese-addons patches/chinese-addons.patch
+          git apply --directory=fcitx5-chinese-addons patches/chinese-addons.windows.patch
           git apply --directory=fcitx5-jyutping patches/jyutping.patch
           git apply --directory=fcitx5-rime patches/rime.log.patch
           git apply --directory=fcitx5-table-other patches/table-other.patch
@@ -89,7 +90,8 @@ jobs:
             $(./scripts/windows-options.sh) \
             -DCMAKE_BUILD_TYPE=Release \
             -DARCH=${{ matrix.cmake_arch }}
-          cmake --build build/windows-${{ matrix.arch }}
+          # Keep going so one run reports every compile error.
+          cmake --build build/windows-${{ matrix.arch }} -- -k 0
           ./scripts/install.sh windows ${{ matrix.arch }}
 
       - name: Upload arch-specific artifact
