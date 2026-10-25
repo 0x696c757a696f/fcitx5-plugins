@@ -62,6 +62,8 @@ if (APPLE)
 elseif (WIN32)
     list(PREPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/relative")
     add_compile_definitions(-DFcitx5Core_EXPORTS -DFcitx5Utils_EXPORTS)
+    # Third-party libraries come from the MSYS2 sysroot as DLLs; cloud pinyin would pull in libcurl.
+    option(ENABLE_CLOUDPINYIN "" OFF)
 elseif (EMSCRIPTEN)
     list(PREPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/relative")
     set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS TRUE)
@@ -146,7 +148,9 @@ install(TARGETS kenlm EXPORT LibIMECoreTargets LIBRARY DESTINATION "${CMAKE_INST
 
 set(LIBIME_INSTALL_PKGDATADIR "../libime")
 add_subdirectory(fcitx5-chinese-addons)
-target_link_libraries(chttrans "${PREBUILDER_LIB_DIR}/libmarisa.a")
+if (NOT WIN32)
+    target_link_libraries(chttrans "${PREBUILDER_LIB_DIR}/libmarisa.a")
+endif()
 target_sources(pinyin PRIVATE patches/customphrase_wrapper.cpp)
 if (EMSCRIPTEN)
     target_sources(pinyin PRIVATE
@@ -234,9 +238,10 @@ endif()
 
 # rime
 if (RIME)
-set(Rime_VERSION 1.12)
 # RIME_DATA_DIR is not actually used on macOS but must exist.
 set(RIME_DATA_DIR "/usr/share/rime-data")
+if (NOT WIN32) # Windows uses the MSYS2 librime DLL through pkg-config.
+set(Rime_VERSION 1.12)
 set(Rime_dependencies
     "-L${PREBUILDER_LIB_DIR}"
     "-lleveldb"
@@ -260,6 +265,7 @@ set_target_properties(Rime_static PROPERTIES
 )
 # plugins use __attribute__((constructor))
 set(RIME_TARGET $<LINK_LIBRARY:WHOLE_ARCHIVE,Rime_static>)
+endif()
 add_subdirectory(fcitx5-rime)
 if (APPLE)
     target_link_options(rime PUBLIC
@@ -295,7 +301,7 @@ endif()
 
 # table-extra, # table-other
 if (TABLE_EXTRA)
-if (APPLE) # Universal so unnecessary on other platforms.
+if (APPLE OR WIN32) # Architecture-independent data on these platforms.
     add_subdirectory(fcitx5-table-extra)
     add_subdirectory(fcitx5-table-other)
 endif()

@@ -25,8 +25,14 @@ macos=(
 )
 
 windows=(
+  chinese-addons
   hallelujah
+  jyutping
+  lua
+  rime
   sayura
+  table-extra
+  table-other
   thai
   unikey
 )
@@ -58,6 +64,22 @@ js=(
 ROOT=`pwd`
 CACHE_DIR=$ROOT/cache/$PLATFORM
 TARGET_DIR=$ROOT/build/$TARGET
+
+if [[ $PLATFORM == "windows" ]]; then
+  if [[ $2 == "arm64" ]]; then
+    SYSROOT=${MSYS2_ROOT:-C:/msys64}/clangarm64
+  else
+    SYSROOT=${MSYS2_ROOT:-C:/msys64}/clang64
+  fi
+fi
+
+has_plugin() {
+  local plugin
+  for plugin in "${plugins[@]}"; do
+    [[ $plugin == "$1" ]] && return 0
+  done
+  return 1
+}
 
 extract_dep() {
   local plugin=$1
@@ -102,6 +124,7 @@ for plugin in "${plugins[@]}"; do
     find $TARGET_DIR/$plugin/usr -name '*.so' -exec strip -x {} \;
   elif [[ $PLATFORM == "windows" ]]; then
     find $TARGET_DIR/$plugin/usr -name '*.dll' -exec strip -x {} \;
+    python $ROOT/scripts/bundle-windows-dlls.py $TARGET_DIR/$plugin/usr $SYSROOT/bin $TARGET_DIR/usr/bin
   elif [[ $PLATFORM == "js" ]]; then
     rm -rf $TARGET_DIR/$plugin/usr/share/icons
   fi
@@ -127,9 +150,21 @@ extract_dep m17n m17n-db
 if [[ $PLATFORM == "js" ]]; then
   extract_dep mozc libmozc
 fi
+fi
+
+if [[ $PLATFORM == "windows" ]]; then
+  OPENCC_DIR=$SYSROOT/share/opencc
+else
+  OPENCC_DIR=$TARGET_DIR/usr/share/opencc
+fi
+if [[ $PLATFORM == "windows" ]] && has_plugin chinese-addons; then
+  cp -r $OPENCC_DIR $TARGET_DIR/chinese-addons/usr/share
+fi
 
 # rime
+if has_plugin rime; then
 rime_dir=$TARGET_DIR/rime/usr/share/rime-data
+mkdir -p $rime_dir
 pushd $ROOT/fcitx5-rime-data > /dev/null
 cp rime-prelude/*.yaml $rime_dir
 cp rime-essay/essay.txt $rime_dir
@@ -137,7 +172,8 @@ cp rime-luna-pinyin/*.yaml $rime_dir
 cp rime-stroke/*.yaml $rime_dir
 cp default.yaml $rime_dir
 popd > /dev/null
-cp -r $TARGET_DIR/usr/share/opencc $rime_dir
+cp -r $OPENCC_DIR $rime_dir
+fi
 
 # skk
 if [[ $PLATFORM != "windows" ]]; then
@@ -147,7 +183,6 @@ cp -r $TARGET_DIR/usr/share/libskk $skk_share_dir
 skk_dict=SKK-JISYO.L.gz
 [[ -f $ROOT/cache/$skk_dict ]] || curl --retry 3 -fsSLO --output-dir $ROOT/cache https://skk-dev.github.io/dict/$skk_dict
 gunzip -fc $ROOT/cache/$skk_dict > $skk_share_dir/skk/SKK-JISYO.L
-fi
 fi
 
 # zhuyin
@@ -176,9 +211,11 @@ if [[ $PLATFORM == "macos" || $PLATFORM == "windows" ]]; then
 fi
 
 # chinese-addons
-if [[ $PLATFORM == "macos" ]]; then
+if [[ $PLATFORM == "macos" || $PLATFORM == "windows" ]] && has_plugin chinese-addons; then
   DESTDIR=$TARGET_DIR/libime-install cmake --install $TARGET_DIR/libime
-  cp -r $TARGET_DIR/libime-install/usr/bin $TARGET_DIR/chinese-addons/usr
+  if [[ $PLATFORM == "macos" ]]; then
+    cp -r $TARGET_DIR/libime-install/usr/bin $TARGET_DIR/chinese-addons/usr
+  fi
   cp -r $TARGET_DIR/libime-install/usr/share $TARGET_DIR/chinese-addons/data
   # Install zh_CN.lm and zh_CN.lm.predict which are not in share
   mkdir -p $TARGET_DIR/chinese-addons/data/lib
@@ -186,9 +223,9 @@ if [[ $PLATFORM == "macos" ]]; then
 fi
 
 # jyutping
-if [[ $PLATFORM != "windows" ]]; then
-  rm $TARGET_DIR/jyutping/usr/lib/libIMEJyutping.a
-  if [[ $PLATFORM == "macos" ]]; then
+if has_plugin jyutping; then
+  rm -f $TARGET_DIR/jyutping/usr/lib/libIMEJyutping.a
+  if [[ $PLATFORM == "macos" || $PLATFORM == "windows" ]]; then
     # Install zh_HK.lm and zh_HK.lm.predict which are not in share
     mkdir -p $TARGET_DIR/jyutping/data/lib
     mv $TARGET_DIR/jyutping/usr/lib/libime $TARGET_DIR/jyutping/data/lib
@@ -207,29 +244,27 @@ if [[ $PLATFORM != "windows" ]]; then
   fi
 fi
 
-if [[ $PLATFORM != "windows" ]]; then
-package anthy anthy
-package bamboo bamboo
-package chewing chewing
-package chinese-addons pinyin
-package cskk cskk
-package hangul hangul
-package jyutping jyutping
-package keyman
-package kkc kkc
-package lua
-package m17n
-package mozc mozc
-package rime rime
-package skk skk
-package zhuyin zhuyin
-fi
-package hallelujah hallelujah
-package sayura sayura
-package thai libthai
-package unikey unikey
+has_plugin anthy && package anthy anthy
+has_plugin bamboo && package bamboo bamboo
+has_plugin chewing && package chewing chewing
+has_plugin chinese-addons && package chinese-addons pinyin
+has_plugin cskk && package cskk cskk
+has_plugin hangul && package hangul hangul
+has_plugin jyutping && package jyutping jyutping
+has_plugin keyman && package keyman
+has_plugin kkc && package kkc kkc
+has_plugin lua && package lua
+has_plugin m17n && package m17n
+has_plugin mozc && package mozc mozc
+has_plugin rime && package rime rime
+has_plugin skk && package skk skk
+has_plugin zhuyin && package zhuyin zhuyin
+has_plugin hallelujah && package hallelujah hallelujah
+has_plugin sayura && package sayura sayura
+has_plugin thai && package thai libthai
+has_plugin unikey && package unikey unikey
 
-if [[ $PLATFORM == "macos" ]]; then
+if [[ $PLATFORM == "macos" || $PLATFORM == "windows" ]] && has_plugin table-extra; then
   # table-extra
   pushd $TARGET_DIR > /dev/null
   python $ROOT/scripts/package-table-extra.py
