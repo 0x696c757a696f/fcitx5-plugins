@@ -228,8 +228,15 @@ endif()
 
 # kkc
 if (KKC)
+if (WIN32)
+    # Scoped to kkc: fcitx5-skk rejects SKK_DEFAULT_PATH.
+    set(SKK_DEFAULT_PATH "$XDG_DATA_DIRS/skk/")
+endif()
 add_subdirectory(fcitx5-kkc)
-target_link_libraries(kkc "${PREBUILDER_LIB_DIR}/libmarisa.a")
+unset(SKK_DEFAULT_PATH)
+if (NOT WIN32) # On Windows marisa comes from MSYS2 through kkc-1.0.pc.
+    target_link_libraries(kkc "${PREBUILDER_LIB_DIR}/libmarisa.a")
+endif()
 endif()
 
 # m17n

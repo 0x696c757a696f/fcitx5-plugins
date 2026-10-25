@@ -34,6 +34,7 @@ windows=(
   hangul
   jyutping
   keyman
+  kkc
   lua
   m17n
   rime
@@ -250,11 +251,11 @@ if has_plugin jyutping; then
 fi
 
 # kkc
-if [[ $PLATFORM != "windows" ]]; then
+if has_plugin kkc; then
   libkkc_data=libkkc-data.tar.bz2
   [[ -f $ROOT/cache/$libkkc_data ]] || curl --retry 3 -fsSLO --output-dir $ROOT/cache https://github.com/fcitx-contrib/libkkc-data/releases/download/latest/$libkkc_data
   # Model files are under lib/
-  if [[ $PLATFORM == "macos" ]]; then
+  if [[ $PLATFORM == "macos" || $PLATFORM == "windows" ]]; then
     tar xf $ROOT/cache/$libkkc_data -C $TARGET_DIR/kkc/data
   else
     tar xf $ROOT/cache/$libkkc_data -C $TARGET_DIR/kkc/usr
