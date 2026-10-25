@@ -4,12 +4,18 @@
 
 #include <direct.h>
 #include <io.h>
+#include <locale.h>
 #include <malloc.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 
 #define mkdir(path, mode) _mkdir(path)
+
+/* The Windows CRT has no LC_MESSAGES category. */
+#ifndef LC_MESSAGES
+#define LC_MESSAGES LC_CTYPE
+#endif
 
 __declspec(dllimport) int __stdcall CreateHardLinkA(const char *, const char *, void *);
 
