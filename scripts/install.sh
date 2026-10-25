@@ -26,8 +26,10 @@ macos=(
 
 windows=(
   anthy
+  bamboo
   chewing
   chinese-addons
+  cskk
   hallelujah
   hangul
   jyutping
@@ -137,6 +139,7 @@ done
 if [[ $PLATFORM == "windows" ]]; then
   has_plugin anthy && extract_dep anthy anthy-cmake
   has_plugin chewing && extract_dep chewing libchewing
+  has_plugin cskk && extract_dep cskk cskk
   has_plugin hangul && extract_dep hangul libhangul
   has_plugin m17n && extract_dep m17n m17n-db
 fi

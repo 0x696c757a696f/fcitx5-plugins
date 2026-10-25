@@ -1,0 +1,82 @@
+diff --git a/cskk/Cargo.toml b/cskk/Cargo.toml
+index 86886b8..e7e91bb 100644
+--- a/cskk/Cargo.toml
++++ b/cskk/Cargo.toml
+@@ -12,14 +12,14 @@ categories = ["internationalization", "text-processing"]
+ rust-version.workspace = true
+ 
+ [lib]
+-crate-type = ["cdylib", "lib"]
++crate-type = ["staticlib"]
+ 
+ [features]
+ capi = []
+ 
+ [dependencies]
+ log = "^0.4.29"
+-xkbcommon = "^0.8.0"
++xkbcommon = { version = "^0.8.0", default-features = false }
+ bitflags = "2.10.0"
+ enum-display-derive = "^0.1.0"
+ serde = "^1.0.228"
+@@ -31,12 +31,14 @@ toml = "0.8.23"
+ thiserror = "2.0.17"
+ regex = "^1.12.2"
+ lazy_static = "1.4"
+-xdg = { version = "^2.4" }
+ anyhow = { version = "^1.0.100" }
+ nom = "^8.0.0"
+ serde_with = { version = "3.0.0", features = ["macros"] }
+ lru_ordered_map = { path = "../lru_ordered_map" }
+ 
++[target.'cfg(unix)'.dependencies]
++xdg = { version = "^2.4" }
++
+ [dev-dependencies]
+ env_logger = "0.11.8"
+ tempfile = "^3.3"
+diff --git a/cskk/src/env.rs b/cskk/src/env.rs
+index 75efa77..1f23d56 100644
+--- a/cskk/src/env.rs
++++ b/cskk/src/env.rs
+@@ -39,7 +39,8 @@ fn search_path_from_xdg_data_dir(
+ 
+     let xdg_data_dirs =
+         xdg_data_dirs_env.unwrap_or_else(|_| "/usr/local/share/:/usr/share/".to_string());
+-    let xdg_data_dirs = xdg_data_dirs.split(':');
++    // Windows paths contain ':', so the list uses ';' there like PATH.
++    let xdg_data_dirs = xdg_data_dirs.split(if cfg!(windows) { ';' } else { ':' });
+     for xdg_data_dir in xdg_data_dirs {
+         if PathBuf::from(format!("{xdg_data_dir}/{filepath}")).exists() {
+             return Ok(format!("{xdg_data_dir}/{filepath}"));
+diff --git a/cskk/src/error.rs b/cskk/src/error.rs
+index 5a52fdb..7a429c1 100644
+--- a/cskk/src/error.rs
++++ b/cskk/src/error.rs
+@@ -24,6 +24,7 @@ pub enum CskkError {
+         #[from]
+         source: std::io::Error,
+     },
++    #[cfg(unix)]
+     #[error(transparent)]
+     XDGBaseDirectoryError {
+         #[from]
+diff --git a/cskk/src/rule.rs b/cskk/src/rule.rs
+index 312892c..96276c7 100644
+--- a/cskk/src/rule.rs
++++ b/cskk/src/rule.rs
+@@ -177,6 +177,14 @@ impl CskkRule {
+ 
+ impl CskkRuleMetadata {
+     /// Find which rules directory to use and load the metadata only.
++    #[cfg(not(unix))]
++    pub(crate) fn load_metadata() -> Result<Self, CskkError> {
++        let rule_directory = PathBuf::from(filepath_from_xdg_data_dir("libcskk/rules")?);
++        Self::load_metadata_from_path(&rule_directory)
++    }
++
++    /// Find which rules directory to use and load the metadata only.
++    #[cfg(unix)]
+     pub(crate) fn load_metadata() -> Result<Self, CskkError> {
+         let base_directory = xdg::BaseDirectories::new()?;
+         if let Some(rule_directory) = base_directory.find_data_file("libcskk/rules") {

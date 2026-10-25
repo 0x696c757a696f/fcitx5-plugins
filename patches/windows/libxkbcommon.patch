@@ -1,0 +1,26 @@
+diff --git a/meson.build b/meson.build
+index 2066cbc..0bddcad 100644
+--- a/meson.build
++++ b/meson.build
+@@ -857,6 +857,7 @@ else
+ endif
+ 
+ 
++'''
+ # xkeyboard-config "verifier"
+ xkct_config = configuration_data()
+ xkct_config.set('MESON_BUILD_ROOT', meson.current_build_dir())
+@@ -1387,6 +1388,7 @@ if get_option('enable-x11')
+       env: bench_env,
+   )
+ endif
++'''
+ 
+ 
+ # Documentation.
+@@ -1520,5 +1522,4 @@ summary({
+     'variant': get_option('default-variant'),
+ }, section: 'Defaults')
+ summary({
+-    'merge-modes': has_merge_modes_tests,
+ }, section: 'Tests')
