@@ -50,7 +50,7 @@ cached() {
 # libhangul
 if ! cached libhangul; then
 configure libhangul -DENABLE_EXTERNAL_KEYBOARDS=OFF -DENABLE_UNIT_TEST=OFF -DENABLE_TOOLS=OFF
-cmake --build build/deps-$ARCH/libhangul
+cmake --build build/deps-$ARCH/libhangul -- -k 0
 install_dep libhangul
 package_dep libhangul
 fi
@@ -60,7 +60,7 @@ if ! cached libchewing; then
 # A static libchewing has to export the Rust library it wraps.
 git -C deps/libchewing apply $(cygpath -m $ROOT)/patches/windows/libchewing.patch
 configure libchewing -DBUILD_DOC=OFF -DWITH_SQLITE3=OFF
-cmake --build build/deps-$ARCH/libchewing
+cmake --build build/deps-$ARCH/libchewing -- -k 0
 install_dep libchewing
 # libchewing.a only wraps the Rust static library, which is what plugins link.
 cp $(find build/deps-$ARCH/libchewing -name libchewing_capi.a | head -1) build/deps-$ARCH/libchewing-install/usr/lib/libchewing.a
@@ -72,7 +72,7 @@ if ! cached m17n-cmake; then
 git -C deps/m17n-cmake/m17n-lib apply $(cygpath -m $ROOT)/patches/windows/m17n-lib.patch
 configure m17n-cmake \
   "-DCMAKE_C_FLAGS=-I$(cygpath -m $ROOT/patches/windows/m17n) -include glob.h -DM17NDIR=\\\"/usr/share/m17n\\\""
-cmake --build build/deps-$ARCH/m17n-cmake
+cmake --build build/deps-$ARCH/m17n-cmake -- -k 0
 install_dep m17n-cmake
 package_dep m17n-cmake
 fi
@@ -86,7 +86,7 @@ fi
 if ! cached anthy-cmake; then
 configure anthy-cmake \
   "-DCMAKE_C_FLAGS=-I$(cygpath -m $ROOT/patches/windows/anthy) -include pwd.h"
-cmake --build build/deps-$ARCH/anthy-cmake
+cmake --build build/deps-$ARCH/anthy-cmake -- -k 0
 install_dep anthy-cmake
 curl --retry 3 -fsSL -o build/deps-$ARCH/anthy-macos.tar.bz2 \
   https://github.com/fcitx-contrib/fcitx5-prebuilder/releases/download/macos/anthy-cmake-arm64.tar.bz2
