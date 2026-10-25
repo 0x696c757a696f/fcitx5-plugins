@@ -33,6 +33,7 @@ windows=(
   hallelujah
   hangul
   jyutping
+  keyman
   lua
   m17n
   rime

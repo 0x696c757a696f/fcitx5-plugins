@@ -1,0 +1,25 @@
+diff --git a/core/tests/meson.build b/core/tests/meson.build
+index ce0f68a257..5c350079e7 100644
+--- a/core/tests/meson.build
++++ b/core/tests/meson.build
+@@ -17,7 +17,6 @@ libsrc = include_directories(
+ 
+ # kmx_test_source is required for linux builds, so always enable it even when we
+ # disable all other tests
+-subdir('kmx_test_source')
+ 
+ if get_option('keyman_core_tests')
+   message('option "keyman_core_tests" is true, enabling tests')
+diff --git a/core/src/debuglog.cpp b/core/src/debuglog.cpp
+index 194cd77..96028d3 100644
+--- a/core/src/debuglog.cpp
++++ b/core/src/debuglog.cpp
+@@ -21,7 +21,7 @@ namespace kmx {
+ #define MEDIUM_BUF_SIZ (128 * 7)
+ 
+ 
+-#ifdef _MSC_VER
++#ifdef _WIN32
+ #define _USE_WINDOWS
+ #endif
+ 

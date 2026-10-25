@@ -106,3 +106,6 @@
 [submodule "deps/libpinyin"]
 	path = deps/libpinyin
 	url = https://github.com/libpinyin/libpinyin
+[submodule "deps/keyman"]
+	path = deps/keyman
+	url = https://github.com/keymanapp/keyman

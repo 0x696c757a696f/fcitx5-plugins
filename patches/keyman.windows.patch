@@ -1,0 +1,50 @@
+diff --git a/src/engine.cpp b/src/engine.cpp
+index 4b8314e..7d0a304 100644
+--- a/src/engine.cpp
++++ b/src/engine.cpp
+@@ -32,6 +32,7 @@
+ #include <fcitx/instance.h>
+ #include <fcntl.h>
+ #include <filesystem>
++#include <fstream>
+ #include <functional>
+ #include <keyman_core_api.h>
+ #include <keyman_core_api_vkeys.h>
+@@ -40,7 +41,9 @@
+ #include <set>
+ #include <string>
+ #include <string_view>
++#ifndef _WIN32
+ #include <sys/mman.h>
++#endif
+ #include <sys/stat.h>
+ #include <system_error>
+ #include <unordered_map>
+@@ -323,6 +326,18 @@ void fcitx::KeymanKeyboardData::load() {
+     return;
+   }
+ 
++#ifdef _WIN32
++  // No mmap on Windows: keyman-core copies the blob, so a plain read is enough.
++  std::ifstream kmxFile(kmxPath, std::ios::binary);
++  std::vector<char> kmxData((std::istreambuf_iterator<char>(kmxFile)),
++                            std::istreambuf_iterator<char>());
++  if (!kmxFile.good() && !kmxFile.eof()) {
++    FCITX_KEYMAN_ERROR() << "Failed to read kmx file: " << kmxPath;
++    return;
++  }
++  km_core_status status_keyboard = km_core_keyboard_load_from_blob(
++      kmxPath.string().c_str(), kmxData.data(), kmxData.size(), &keyboard_);
++#else
+   UnixFD fd(open(kmxPath.string().c_str(), O_RDONLY));
+   if (!fd.isValid()) {
+     FCITX_KEYMAN_ERROR() << "Failed to open kmx file: " << kmxPath;
+@@ -349,6 +364,8 @@ void fcitx::KeymanKeyboardData::load() {
+   km_core_status status_keyboard = km_core_keyboard_load_from_blob(
+       kmxPath.string().c_str(), mmapped.get(), stat_buf.st_size, &keyboard_);
+ 
++#endif
++
+   if (status_keyboard != KM_CORE_STATUS_OK) {
+     FCITX_KEYMAN_ERROR() << "problem creating km_core_keyboard" << metadata_.id;
+     return;
