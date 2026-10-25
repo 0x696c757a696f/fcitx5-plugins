@@ -11,3 +11,4 @@ pnpm-lock.yaml
 fcitx5-online*
 test-results
 predict.db
+.ccache
