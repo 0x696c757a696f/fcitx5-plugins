@@ -167,8 +167,9 @@ git -C deps/libpinyin apply $(cygpath -m $ROOT)/patches/windows/libpinyin.patch
 configure libpinyin -DBUILD_UTILS=OFF -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_PREFIX_PATH=$(cygpath -m $USR)
 cmake --build build/deps-$ARCH/libpinyin -- -k 0
 install_dep libpinyin
-# -lpinyin would resolve to the Pinyin addon target of chinese-addons, so link a renamed copy.
-cp $ROOT/build/deps-$ARCH/libpinyin-install/usr/lib/libpinyin.a $ROOT/build/deps-$ARCH/libpinyin-install/usr/lib/libpinyin-static.a
+# On Windows libpinyin names its archive after the install prefix (usrpinyin.a), and
+# -lpinyin would resolve to the Pinyin addon target of chinese-addons, so rename it.
+mv $ROOT/build/deps-$ARCH/libpinyin-install/usr/lib/*pinyin.a $ROOT/build/deps-$ARCH/libpinyin-install/usr/lib/libpinyin-static.a
 for pc in $ROOT/build/deps-$ARCH/libpinyin-install/usr/lib/pkgconfig/*.pc; do
   sed -i 's|-lpinyin$|-lpinyin-static|' $pc
   sed -i "s|^prefix=.*|prefix=$(cygpath -m $USR)|; s|^exec_prefix=.*|exec_prefix=\${prefix}|; s|^libdir=.*|libdir=\${prefix}/lib|; s|^includedir=.*|includedir=\${prefix}/include|" $pc
