@@ -145,6 +145,7 @@ fi
 # kyotocabinet
 if ! cached kyotocabinet; then
 # The configure script needs a POSIX shell, so compile the library objects directly.
+git -C deps/kyotocabinet apply $(cygpath -m $ROOT)/patches/windows/kyotocabinet.patch
 kc_build=$(cygpath -m $ROOT/build/deps-$ARCH/kyotocabinet)
 kc_usr=$(cygpath -m $ROOT/build/deps-$ARCH/kyotocabinet-install/usr)
 rm -rf $kc_build $ROOT/build/deps-$ARCH/kyotocabinet-install
