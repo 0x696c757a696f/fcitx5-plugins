@@ -41,6 +41,7 @@ windows=(
   table-other
   thai
   unikey
+  zhuyin
 )
 
 js=(
@@ -200,7 +201,7 @@ gunzip -fc $ROOT/cache/$skk_dict > $skk_share_dir/skk/SKK-JISYO.L
 fi
 
 # zhuyin
-if [[ $PLATFORM != "windows" ]]; then
+if has_plugin zhuyin; then
   zhuyin_data=zhuyin-data.tar.bz2
   [[ -f $ROOT/cache/$zhuyin_data ]] || curl --retry 3 -fsSLO --output-dir $ROOT/cache https://github.com/fcitx-contrib/zhuyin-data/releases/download/latest/$zhuyin_data
   tar xf $ROOT/cache/$zhuyin_data -C $TARGET_DIR/zhuyin/usr

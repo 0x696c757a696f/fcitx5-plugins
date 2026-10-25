@@ -1,0 +1,121 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index c04f10cf..a5a45a41 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -145,6 +145,12 @@ configure_file(
+     @ONLY
+ )
+ 
++configure_file(
++    libzhuyin.pc.in
++    libzhuyin.pc
++    @ONLY
++)
++
+ configure_file(
+   config.h.cmake
+   config.h
+@@ -154,6 +160,7 @@ configure_file(
+ install(
+     FILES
+         ${CMAKE_BINARY_DIR}/libpinyin.pc
++        ${CMAKE_BINARY_DIR}/libzhuyin.pc
+     DESTINATION
+         ${DIR_LIBRARY}/pkgconfig
+ )
+diff --git a/libzhuyin.pc.in b/libzhuyin.pc.in
+index f248d1c0..0e6b944f 100644
+--- a/libzhuyin.pc.in
++++ b/libzhuyin.pc.in
+@@ -11,5 +11,5 @@ Name: libzhuyin
+ Description: Library to deal with zhuyin
+ Version: @VERSION@
+ Requires: glib-2.0
+-Libs: -L${libdir} -lzhuyin
++Libs: -L${libdir} -lpinyin
+ Cflags: -I${libzhuyinincludedir}
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index f48a9b3e..f8a496fe 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -11,6 +11,7 @@ set(
+ add_library(
+     pinyin
+     ${LIBPINYIN_SOURCES}
++    zhuyin.cpp
+ )
+ 
+ target_link_libraries(
+@@ -40,6 +41,7 @@ install(
+ install(
+     FILES
+         ${LIBPINYIN_HEADERS}
++        zhuyin.h
+     DESTINATION
+         ${DIR_INCLUDE_LIBPINYIN}
+ )
+diff --git a/src/lookup/CMakeLists.txt b/src/lookup/CMakeLists.txt
+index 767748c2..77da8b1c 100644
+--- a/src/lookup/CMakeLists.txt
++++ b/src/lookup/CMakeLists.txt
+@@ -12,7 +12,7 @@ set(
+ 
+ add_library(
+     lookup
+-    STATIC
++    OBJECT
+     ${LIBLOOKUP_SOURCES}
+ )
+ 
+diff --git a/src/storage/CMakeLists.txt b/src/storage/CMakeLists.txt
+index cceccdf1..43fa3245 100644
+--- a/src/storage/CMakeLists.txt
++++ b/src/storage/CMakeLists.txt
+@@ -48,7 +48,7 @@ endif (HAVE_KYOTO_CABINET)
+ 
+ add_library(
+     storage
+-    STATIC
++    OBJECT
+     ${LIBSTORAGE_SOURCES}
+ )
+ 
+@@ -61,6 +61,7 @@ target_link_libraries(
+ install(
+     FILES
+         ${LIBSTORAGE_HEADERS}
++        zhuyin_custom2.h
+     DESTINATION
+         ${DIR_INCLUDE_LIBPINYIN}
+ )
+diff --git a/src/zhuyin.cpp b/src/zhuyin.cpp
+index 1aeecf58..a4d868b8 100644
+--- a/src/zhuyin.cpp
++++ b/src/zhuyin.cpp
+@@ -1127,7 +1127,7 @@ static gint compare_item_with_token(gconstpointer lhs,
+ #endif
+ 
+ static gint compare_item_with_length_and_frequency(gconstpointer lhs,
+-                                                   gconstpointer rhs) {
++                                                   gconstpointer rhs, void *) {
+     lookup_candidate_t * item_lhs = (lookup_candidate_t *)lhs;
+     lookup_candidate_t * item_rhs = (lookup_candidate_t *)rhs;
+ 
+@@ -1526,7 +1526,7 @@ bool zhuyin_guess_candidates_after_cursor(zhuyin_instance_t * instance,
+     _compute_frequency_of_items(context, prev_token, &merged_gram, candidates);
+ 
+     /* sort the candidates by length and frequency. */
+-    g_array_sort(candidates, compare_item_with_length_and_frequency);
++    g_array_sort(candidates, (GCompareFunc)compare_item_with_length_and_frequency);
+ 
+     /* post process to remove duplicated candidates */
+ 
+@@ -1607,7 +1607,7 @@ bool zhuyin_guess_candidates_before_cursor(zhuyin_instance_t * instance,
+         _compute_frequency_of_items(context, prev_token, &merged_gram, items);
+ 
+         /* sort the items by length and frequency. */
+-        g_array_sort(items, compare_item_with_length_and_frequency);
++        g_array_sort(items, (GCompareFunc)compare_item_with_length_and_frequency);
+ 
+         g_array_append_vals(candidates, items->data, items->len);
+ 
