@@ -10,7 +10,8 @@ forked from [fcitx-contrib/fcitx5-plugins](https://github.com/fcitx-contrib/fcit
   `upstream-sync` branch. Once the Windows build passes there, `master` is fast-forwarded and released.
 * Dependabot updates the GitHub Actions and every submodule to its latest commit each week.
   Its pull requests are merged when the build passes. `fcitx5` is the exception: it stays on the
-  commit that fcitx5-windows-next ships, so the plugins match the product's ABI.
+  commit that fcitx5-windows-next ships, so the plugins match the product's ABI. `Sync upstream`
+  reads that pin from fcitx5-windows-next every day and moves the submodule when it changes.
 
 ## Plugins
 

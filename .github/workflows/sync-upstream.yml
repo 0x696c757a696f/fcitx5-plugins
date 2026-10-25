@@ -23,7 +23,6 @@ jobs:
           fetch-depth: 0
 
       - name: Apply upstream changes
-        id: apply
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
@@ -53,9 +52,28 @@ jobs:
           git add .upstream-commit
           git commit -m "Sync upstream fcitx-contrib/fcitx5-plugins@${new:0:7}" \
             -m "Upstream range: $old..$new"
-          git push --force origin HEAD:refs/heads/upstream-sync
-          echo "pushed=true" >> "$GITHUB_OUTPUT"
 
-      - name: Test the synced branch
-        if: steps.apply.outputs.pushed == 'true'
-        run: gh workflow run ci.yml --ref upstream-sync
+      - name: Follow the fcitx5 pin of fcitx5-windows-next
+        run: |
+          pin=$(curl -fsSL https://raw.githubusercontent.com/0x696c757a696f/fcitx5-windows-next/main/tools/bootstrap-fcitx.ps1 |
+            sed -n "s/.*Name = 'fcitx5';.*Commit = '\([0-9a-f]\{40\}\)'.*/\1/p")
+          if [[ -z "$pin" ]]; then
+            echo "::error::Could not read the fcitx5 pin from fcitx5-windows-next."
+            exit 1
+          fi
+          current=$(git rev-parse HEAD:fcitx5)
+          if [[ "$pin" == "$current" ]]; then
+            echo "fcitx5 already at $pin."
+            exit 0
+          fi
+          git update-index --cacheinfo "160000,$pin,fcitx5"
+          git commit -m "Update fcitx5 to ${pin:0:7}" -m "Follows fcitx5-windows-next tools/bootstrap-fcitx.ps1."
+
+      - name: Push and test
+        run: |
+          if [[ "$(git rev-parse HEAD)" == "$(git rev-parse origin/master)" ]]; then
+            echo "Nothing to sync."
+            exit 0
+          fi
+          git push --force origin HEAD:refs/heads/upstream-sync
+          gh workflow run ci.yml --ref upstream-sync
