@@ -1,0 +1,21 @@
+diff --git a/src/zhuyinengine.cpp b/src/zhuyinengine.cpp
+index 7554e1d..1c886a1 100644
+--- a/src/zhuyinengine.cpp
++++ b/src/zhuyinengine.cpp
+@@ -308,13 +308,13 @@ ZhuyinEngine::ZhuyinEngine(Instance *instance)
+       }) {
+     const auto &sp = StandardPaths::global();
+     auto userDir = sp.userDirectory(StandardPathsType::PkgData) / "zhuyin";
+-    if (!fs::makePath(userDir)) {
+-        if (fs::isdir(userDir)) {
++    if (!fs::makePath(userDir.string())) {
++        if (fs::isdir(userDir.string())) {
+             ZHUYIN_DEBUG() << "Failed to create user directory: " << userDir;
+         }
+     }
+     std::string tablePath =
+-        sp.locate(StandardPathsType::PkgData, "zhuyin/table.conf");
++        sp.locate(StandardPathsType::PkgData, "zhuyin/table.conf").string();
+     context_.reset(zhuyin_init(fcitx::fs::dirName(tablePath).c_str(),
+                                userDir.string().c_str()));
+ 

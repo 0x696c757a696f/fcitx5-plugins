@@ -124,6 +124,7 @@ jobs:
           git apply --directory=fcitx5-rime patches/rime.log.patch
           git apply --directory=fcitx5-rime patches/rime.windows.patch
           git apply --directory=fcitx5-table-other patches/table-other.patch
+          git apply --directory=fcitx5-zhuyin patches/zhuyin.windows.patch
           cmake -B build/windows-${{ matrix.arch }} -G Ninja \
             $(./scripts/windows-options.sh) \
             -DCMAKE_BUILD_TYPE=Release \
