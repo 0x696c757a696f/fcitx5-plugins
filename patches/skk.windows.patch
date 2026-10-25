@@ -1,0 +1,41 @@
+diff --git a/src/skk.cpp b/src/skk.cpp
+index df9c007..a96d534 100644
+--- a/src/skk.cpp
++++ b/src/skk.cpp
+@@ -331,6 +331,15 @@ SkkEngine::SkkEngine(Instance *instance)
+           newState->applyConfig();
+           return newState;
+       }) {
++#ifdef _WIN32
++    // libskk looks for its rules under a data directory fixed at build time.
++    auto ruleDir =
++        StandardPaths::global().locate(StandardPathsType::Data, "libskk/rules");
++    if (!ruleDir.empty()) {
++        g_setenv("LIBSKK_DATA_PATH",
++                 ruleDir.parent_path().generic_string().c_str(), FALSE);
++    }
++#endif
+     skk_init();
+ 
+     modeAction_ = std::make_unique<SkkModeAction>(this);
+@@ -539,13 +548,15 @@ void SkkEngine::loadDictionary() {
+ 
+             std::string_view partialpath = path;
+             if (stringutils::consumePrefix(partialpath, "$FCITX_CONFIG_DIR/")) {
+-                path = StandardPaths::global().userDirectory(
+-                           StandardPathsType::PkgData) /
+-                       partialpath;
++                path = (StandardPaths::global().userDirectory(
++                            StandardPathsType::PkgData) /
++                        partialpath)
++                           .string();
+             } else if (stringutils::consumePrefix(partialpath,
+                                                   "$XDG_DATA_DIRS/")) {
+-                path = StandardPaths::global().locate(StandardPathsType::Data,
+-                                                      partialpath);
++                path = StandardPaths::global()
++                           .locate(StandardPathsType::Data, partialpath)
++                           .string();
+             }
+ 
+             if (mode == 1) {

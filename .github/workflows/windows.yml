@@ -44,6 +44,8 @@ jobs:
             mingw-w64-clang-${{ matrix.pkg_arch }}-gettext-tools
             mingw-w64-clang-${{ matrix.pkg_arch }}-go
             mingw-w64-clang-${{ matrix.pkg_arch }}-glib2
+            mingw-w64-clang-${{ matrix.pkg_arch }}-json-glib
+            mingw-w64-clang-${{ matrix.pkg_arch }}-libgee
             mingw-w64-clang-${{ matrix.pkg_arch }}-libiconv
             mingw-w64-clang-${{ matrix.pkg_arch }}-libthai
             mingw-w64-clang-${{ matrix.pkg_arch }}-librime
@@ -55,6 +57,7 @@ jobs:
             mingw-w64-clang-${{ matrix.pkg_arch }}-opencc
             mingw-w64-clang-${{ matrix.pkg_arch }}-pkgconf
             mingw-w64-clang-${{ matrix.pkg_arch }}-rust
+            mingw-w64-clang-${{ matrix.pkg_arch }}-vala
             mingw-w64-clang-${{ matrix.pkg_arch }}-zstd
 
       - name: Set up environment
@@ -155,6 +158,7 @@ jobs:
           git apply --directory=fcitx5-m17n patches/m17n.windows.patch
           git apply --directory=fcitx5-rime patches/rime.log.patch
           git apply --directory=fcitx5-rime patches/rime.windows.patch
+          git apply --directory=fcitx5-skk patches/skk.windows.patch
           git apply --directory=fcitx5-table-other patches/table-other.patch
           git apply --directory=fcitx5-zhuyin patches/zhuyin.windows.patch
           cmake -B build/windows-${{ matrix.arch }} -G Ninja \

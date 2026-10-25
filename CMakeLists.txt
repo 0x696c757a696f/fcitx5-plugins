@@ -70,6 +70,7 @@ if (APPLE)
 elseif (WIN32)
     list(PREPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/relative")
     add_compile_definitions(-DFcitx5Core_EXPORTS -DFcitx5Utils_EXPORTS)
+    set(SKK_PATH "$XDG_DATA_DIRS/skk" CACHE STRING "") # skk
     # Third-party libraries come from the MSYS2 sysroot as DLLs; cloud pinyin would pull in libcurl.
     option(ENABLE_CLOUDPINYIN "" OFF)
 elseif (EMSCRIPTEN)

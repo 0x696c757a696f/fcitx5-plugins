@@ -38,6 +38,7 @@ windows=(
   m17n
   rime
   sayura
+  skk
   table-extra
   table-other
   thai
@@ -192,7 +193,7 @@ cp -r $OPENCC_DIR $rime_dir
 fi
 
 # skk
-if [[ $PLATFORM != "windows" ]]; then
+if has_plugin skk; then
 skk_share_dir=$TARGET_DIR/skk/usr/share
 mkdir -p $skk_share_dir/skk
 cp -r $TARGET_DIR/usr/share/libskk $skk_share_dir
