@@ -98,7 +98,7 @@ fi
 if ! cached libxkbcommon; then
 git -C deps/libxkbcommon apply $(cygpath -m $ROOT)/patches/windows/libxkbcommon.patch
 # meson wants an absolute prefix with a drive on Windows; DESTDIR drops the drive again.
-PATH="$PATH:$MSYS2_ROOT/usr/bin" meson setup build/deps-$ARCH/libxkbcommon deps/libxkbcommon \
+PATH="$PATH:$(cygpath -u "$MSYS2_ROOT")/usr/bin" meson setup build/deps-$ARCH/libxkbcommon deps/libxkbcommon \
   --buildtype=release --default-library=static --prefix=C:/usr \
   -Denable-tools=false -Denable-x11=false -Denable-docs=false -Denable-wayland=false \
   -Denable-bash-completion=false -Denable-xkbregistry=false
