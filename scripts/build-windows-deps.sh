@@ -145,8 +145,8 @@ fi
 # kyotocabinet
 if ! cached kyotocabinet; then
 # The configure script needs a POSIX shell, so compile the library objects directly.
-kc_build=$ROOT/build/deps-$ARCH/kyotocabinet
-kc_usr=$ROOT/build/deps-$ARCH/kyotocabinet-install/usr
+kc_build=$(cygpath -m $ROOT/build/deps-$ARCH/kyotocabinet)
+kc_usr=$(cygpath -m $ROOT/build/deps-$ARCH/kyotocabinet-install/usr)
 rm -rf $kc_build $ROOT/build/deps-$ARCH/kyotocabinet-install
 mkdir -p $kc_build $kc_usr/include $kc_usr/lib
 for obj in kcutil kcthread kcfile kccompress kccompare kcmap kcregex \
