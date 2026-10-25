@@ -5,6 +5,8 @@
 #include <io.h>
 #include <stddef.h>
 #include <sys/types.h>
+/* Lean, so winsock.h stays out and doesn't clash with the gethostname shim. */
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
 #define PROT_READ 1
