@@ -42,6 +42,7 @@ jobs:
             mingw-w64-clang-${{ matrix.pkg_arch }}-gettext-runtime
             mingw-w64-clang-${{ matrix.pkg_arch }}-gettext-tools
             mingw-w64-clang-${{ matrix.pkg_arch }}-go
+            mingw-w64-clang-${{ matrix.pkg_arch }}-glib2
             mingw-w64-clang-${{ matrix.pkg_arch }}-libiconv
             mingw-w64-clang-${{ matrix.pkg_arch }}-libthai
             mingw-w64-clang-${{ matrix.pkg_arch }}-librime
