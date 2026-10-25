@@ -1,0 +1,13 @@
+diff --git a/src/engine.cpp b/src/engine.cpp
+index af3b121..e6506b2 100644
+--- a/src/engine.cpp
++++ b/src/engine.cpp
+@@ -295,7 +295,7 @@ AnthyEngine::AnthyEngine(fcitx::Instance *instance)
+         },
+         0);
+     if constexpr (fcitx::isAndroid() || fcitx::isApple() ||
+-                  fcitx::isEmscripten()) {
++                  fcitx::isEmscripten() || fcitx::isWindows()) {
+         const auto &sp = fcitx::StandardPaths::global();
+         std::string anthy_conf = sp.locate(fcitx::StandardPathsType::Data,
+                                            "anthy/anthy-unicode.conf");

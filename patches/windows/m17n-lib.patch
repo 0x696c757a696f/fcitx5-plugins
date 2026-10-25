@@ -1,0 +1,31 @@
+diff --git a/src/input.c b/src/input.c
+index a36d2fc..138ae42 100644
+--- a/src/input.c
++++ b/src/input.c
+@@ -1256,6 +1256,7 @@ load_macros (MInputMethodInfo *im_info, MPlist *plist)
+ static MIMExternalModule *
+ load_external_module (MPlist *plist)
+ {
++/*
+   void *handle;
+   MSymbol module;
+   char *module_file;
+@@ -1296,15 +1297,18 @@ load_external_module (MPlist *plist)
+  err_label:
+   M17N_OBJECT_UNREF (func_list);
+   dlclose (handle);
++*/
+   return NULL;
+ }
+ 
+ static void
+ unload_external_module (MIMExternalModule *external)
+ {
++/*
+   dlclose (external->handle);
+   M17N_OBJECT_UNREF (external->func_list);
+   free (external);
++*/
+ }
+ 
+ static void

@@ -64,3 +64,30 @@ install_dep libchewing
 cp $(find build/deps-$ARCH/libchewing -name libchewing_capi.a | head -1) build/deps-$ARCH/libchewing-install/usr/lib/libchewing.a
 package_dep libchewing
 fi
+
+# m17n-lib, without loading external modules through dlopen
+if ! cached m17n-cmake; then
+git -C deps/m17n-cmake/m17n-lib apply $ROOT/patches/windows/m17n-lib.patch
+configure m17n-cmake \
+  "-DCMAKE_C_FLAGS=-I$(cygpath -m $ROOT/patches/windows/m17n) -include glob.h -DM17NDIR=\\\"/usr/share/m17n\\\""
+cmake --build build/deps-$ARCH/m17n-cmake
+install_dep m17n-cmake
+package_dep m17n-cmake
+fi
+
+# m17n-db is plain data, released by m17n-cmake.
+[[ -f $CACHE_DIR/m17n-db-$ARCH.tar.bz2 ]] ||
+  curl --retry 3 -fsSL -o $CACHE_DIR/m17n-db-$ARCH.tar.bz2 \
+    https://github.com/fcitx-contrib/m17n-cmake/releases/download/latest/m17n-db.tar.bz2
+
+# anthy-unicode; its dictionary is built by autotools, so it comes from the macOS prebuilt data.
+if ! cached anthy-cmake; then
+configure anthy-cmake \
+  "-DCMAKE_C_FLAGS=-I$(cygpath -m $ROOT/patches/windows/anthy) -include pwd.h"
+cmake --build build/deps-$ARCH/anthy-cmake
+install_dep anthy-cmake
+curl --retry 3 -fsSL -o build/deps-$ARCH/anthy-macos.tar.bz2 \
+  https://github.com/fcitx-contrib/fcitx5-prebuilder/releases/download/macos/anthy-cmake-arm64.tar.bz2
+tar xf build/deps-$ARCH/anthy-macos.tar.bz2 -C build/deps-$ARCH/anthy-cmake-install/usr share/anthy
+package_dep anthy-cmake
+fi

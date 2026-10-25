@@ -88,3 +88,9 @@
 [submodule "deps/libchewing"]
 	path = deps/libchewing
 	url = https://github.com/fcitx-contrib/libchewing
+[submodule "deps/m17n-cmake"]
+	path = deps/m17n-cmake
+	url = https://github.com/fcitx-contrib/m17n-cmake
+[submodule "deps/anthy-cmake"]
+	path = deps/anthy-cmake
+	url = https://github.com/fcitx5-android/anthy-cmake
