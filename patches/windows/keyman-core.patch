@@ -1,0 +1,37 @@
+diff --git a/core/src/debuglog.cpp b/core/src/debuglog.cpp
+index 194cd774b0..96028d30ca 100644
+--- a/core/src/debuglog.cpp
++++ b/core/src/debuglog.cpp
+@@ -21,7 +21,7 @@ namespace kmx {
+ #define MEDIUM_BUF_SIZ (128 * 7)
+ 
+ 
+-#ifdef _MSC_VER
++#ifdef _WIN32
+ #define _USE_WINDOWS
+ #endif
+ 
+diff --git a/core/src/state.cpp b/core/src/state.cpp
+index fcc6578914..bebd9d5e90 100644
+--- a/core/src/state.cpp
++++ b/core/src/state.cpp
+@@ -10,6 +10,7 @@
+ #include "processor.hpp"
+ #include <keyman/keyman_core_api_consts.h>
+ #include <cstring>
++#include <iterator>
+ 
+ using namespace km::core;
+ 
+diff --git a/core/tests/meson.build b/core/tests/meson.build
+index 1f686c260d..619239fc00 100644
+--- a/core/tests/meson.build
++++ b/core/tests/meson.build
+@@ -14,7 +14,6 @@ libsrc = include_directories('../src')
+ 
+ # kmx_test_source is required for linux builds, so always enable it even when we
+ # disable all other tests
+-subdir('kmx_test_source')
+ 
+ if get_option('keyman_core_tests')
+   message('option "keyman_core_tests" is true, enabling tests')

@@ -1,0 +1,66 @@
+diff --git a/src/engine.cpp b/src/engine.cpp
+index 4b8314e..7dd4dcf 100644
+--- a/src/engine.cpp
++++ b/src/engine.cpp
+@@ -32,6 +32,7 @@
+ #include <fcitx/instance.h>
+ #include <fcntl.h>
+ #include <filesystem>
++#include <fstream>
+ #include <functional>
+ #include <keyman_core_api.h>
+ #include <keyman_core_api_vkeys.h>
+@@ -40,7 +41,9 @@
+ #include <set>
+ #include <string>
+ #include <string_view>
++#ifndef _WIN32
+ #include <sys/mman.h>
++#endif
+ #include <sys/stat.h>
+ #include <system_error>
+ #include <unordered_map>
+@@ -135,7 +138,7 @@ std::set<std::string> listKeymapDirs() {
+         return std::filesystem::is_directory(path, ec);
+       });
+   for (const auto &[name, _] : dirs) {
+-    keymapDirs.insert(name);
++    keymapDirs.insert(name.string());
+   }
+   return keymapDirs;
+ }
+@@ -317,12 +320,24 @@ void fcitx::KeymanKeyboardData::load() {
+   if (!std::filesystem::is_regular_file(ldmlFile, ec)) {
+     ldmlFile.clear();
+   }
+-  ldmlFile_ = ldmlFile;
++  ldmlFile_ = ldmlFile.string();
+   if (!std::filesystem::is_regular_file(kmxPath, ec)) {
+     FCITX_KEYMAN_ERROR() << "Failed to find kmx file. " << metadata_.id;
+     return;
+   }
+ 
++#ifdef _WIN32
++  // No mmap on Windows: keyman-core copies the blob, so a plain read is enough.
++  std::ifstream kmxFile(kmxPath, std::ios::binary);
++  std::vector<char> kmxData((std::istreambuf_iterator<char>(kmxFile)),
++                            std::istreambuf_iterator<char>());
++  if (!kmxFile.good() && !kmxFile.eof()) {
++    FCITX_KEYMAN_ERROR() << "Failed to read kmx file: " << kmxPath;
++    return;
++  }
++  km_core_status status_keyboard = km_core_keyboard_load_from_blob(
++      kmxPath.wstring().c_str(), kmxData.data(), kmxData.size(), &keyboard_);
++#else
+   UnixFD fd(open(kmxPath.string().c_str(), O_RDONLY));
+   if (!fd.isValid()) {
+     FCITX_KEYMAN_ERROR() << "Failed to open kmx file: " << kmxPath;
+@@ -349,6 +364,8 @@ void fcitx::KeymanKeyboardData::load() {
+   km_core_status status_keyboard = km_core_keyboard_load_from_blob(
+       kmxPath.string().c_str(), mmapped.get(), stat_buf.st_size, &keyboard_);
+ 
++#endif
++
+   if (status_keyboard != KM_CORE_STATUS_OK) {
+     FCITX_KEYMAN_ERROR() << "problem creating km_core_keyboard" << metadata_.id;
+     return;

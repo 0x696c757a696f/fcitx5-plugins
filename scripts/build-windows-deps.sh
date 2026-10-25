@@ -176,3 +176,29 @@ for pc in $ROOT/build/deps-$ARCH/libpinyin-install/usr/lib/pkgconfig/*.pc; do
 done
 package_dep libpinyin
 fi
+
+# keyman-core, with a static ICU from its meson wrap
+if ! cached keyman-core; then
+git -C deps/keyman apply $(cygpath -m $ROOT)/patches/windows/keyman-core.patch
+mkdir -p deps/keyman/core/resources
+cp deps/keyman/resources/build/meson/standard.meson.build deps/keyman/core/resources/meson.build
+meson setup build/deps-$ARCH/keyman-core deps/keyman/core \
+  --buildtype=release --default-library=static --prefix=C:/usr \
+  -Ddebug=false -Dkeyman_core_tests=false
+ninja -C build/deps-$ARCH/keyman-core
+rm -rf build/deps-$ARCH/keyman-core-install
+DESTDIR=$(cygpath -m $ROOT/build/deps-$ARCH/keyman-core-install) meson install -C build/deps-$ARCH/keyman-core
+mkdir -p build/deps-$ARCH/keyman-core-install/usr/lib/pkgconfig
+cat > build/deps-$ARCH/keyman-core-install/usr/lib/pkgconfig/keyman_core.pc <<PC
+prefix=$(cygpath -m $USR)
+libdir=\${prefix}/lib
+includedir=\${prefix}/include
+
+Name: keyman_core
+Description: Keyman processor for KMN keyboards.
+Version: $(cat deps/keyman/VERSION.md)
+Libs: -L\${libdir} -lkeymancore -lsicuin -lsicuuc
+Cflags: -I\${includedir} -I\${includedir}/keyman -DU_STATIC_IMPLEMENTATION -DKM_CORE_LIBRARY_STATIC
+PC
+package_dep keyman-core
+fi
