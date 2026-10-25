@@ -112,3 +112,6 @@
 [submodule "deps/libskk"]
 	path = deps/libskk
 	url = https://github.com/ueno/libskk
+[submodule "deps/libkkc"]
+	path = deps/libkkc
+	url = https://github.com/ueno/libkkc

@@ -71,6 +71,7 @@ elseif (WIN32)
     list(PREPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/relative")
     add_compile_definitions(-DFcitx5Core_EXPORTS -DFcitx5Utils_EXPORTS)
     set(SKK_PATH "$XDG_DATA_DIRS/skk" CACHE STRING "") # skk
+    set(SKK_DEFAULT_PATH "$XDG_DATA_DIRS/skk/" CACHE STRING "") # kkc
     # Third-party libraries come from the MSYS2 sysroot as DLLs; cloud pinyin would pull in libcurl.
     option(ENABLE_CLOUDPINYIN "" OFF)
 elseif (EMSCRIPTEN)
@@ -229,7 +230,9 @@ endif()
 # kkc
 if (KKC)
 add_subdirectory(fcitx5-kkc)
-target_link_libraries(kkc "${PREBUILDER_LIB_DIR}/libmarisa.a")
+if (NOT WIN32) # On Windows marisa comes from MSYS2 through kkc-1.0.pc.
+    target_link_libraries(kkc "${PREBUILDER_LIB_DIR}/libmarisa.a")
+endif()
 endif()
 
 # m17n

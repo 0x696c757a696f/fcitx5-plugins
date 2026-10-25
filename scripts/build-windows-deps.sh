@@ -214,3 +214,14 @@ rm -rf build/deps-$ARCH/libskk-install
 DESTDIR=$(cygpath -m $ROOT/build/deps-$ARCH/libskk-install) meson install -C build/deps-$ARCH/libskk
 package_dep libskk
 fi
+
+# libkkc, built with a meson file in place of autotools
+if ! cached libkkc; then
+git -C deps/libkkc apply $(cygpath -m $ROOT)/patches/windows/libkkc.patch
+meson setup build/deps-$ARCH/libkkc deps/libkkc \
+  --buildtype=release --default-library=static --prefix=C:/usr
+ninja -C build/deps-$ARCH/libkkc
+rm -rf build/deps-$ARCH/libkkc-install
+DESTDIR=$(cygpath -m $ROOT/build/deps-$ARCH/libkkc-install) meson install -C build/deps-$ARCH/libkkc
+package_dep libkkc
+fi

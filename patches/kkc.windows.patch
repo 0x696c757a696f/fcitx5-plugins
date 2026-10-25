@@ -1,0 +1,94 @@
+diff --git a/src/kkc.cpp b/src/kkc.cpp
+index 564695a..ba7d601 100644
+--- a/src/kkc.cpp
++++ b/src/kkc.cpp
+@@ -12,6 +12,7 @@
+ #include <cstdint>
+ #include <cstdio>
+ #include <cstring>
++#include <filesystem>
+ #include <fcitx-config/iniparser.h>
+ #include <fcitx-utils/capabilityflags.h>
+ #include <fcitx-utils/fdstreambuf.h>
+@@ -53,6 +54,12 @@ namespace {
+ 
+ FCITX_DEFINE_LOG_CATEGORY(kkc_logcategory, "kkc");
+ 
++// GLib takes UTF-8 file names on Windows rather than the ANSI code page.
++std::string utf8Path(const std::filesystem::path &path) {
++    auto u8 = path.u8string();
++    return {u8.begin(), u8.end()};
++}
++
+ }
+ 
+ #define KKC_DEBUG() FCITX_LOGC(kkc_logcategory, Debug)
+@@ -543,15 +550,31 @@ KkcEngine::KkcEngine(Instance *instance)
+       factory_([this](InputContext &ic) { return new KkcState(this, ic); }) {
+ #if !GLIB_CHECK_VERSION(2, 36, 0)
+     g_type_init();
++#endif
++#ifdef _WIN32
++    // libkkc looks for its rules and models under directories fixed at build
++    // time; the rules sit in share/libkkc and the models in lib/libkkc.
++    auto ruleDir =
++        StandardPaths::global().locate(StandardPathsType::Data, "libkkc/rules");
++    if (!ruleDir.empty()) {
++        auto shareDir = ruleDir.parent_path();
++        auto libDir = shareDir.parent_path().parent_path() / "lib" / "libkkc";
++        g_setenv("LIBKKC_DATA_PATH",
++                 (utf8Path(libDir) + ";" + utf8Path(shareDir))
++                     .c_str(),
++                 FALSE);
++    }
+ #endif
+     kkc_init();
+ 
+     fs::makePath(
+-        StandardPaths::global().userDirectory(StandardPathsType::PkgData) /
+-        "kkc/dictionary");
++        (StandardPaths::global().userDirectory(StandardPathsType::PkgData) /
++         "kkc/dictionary")
++            .string());
+     fs::makePath(
+-        StandardPaths::global().userDirectory(StandardPathsType::PkgData) /
+-        "kkc/rules");
++        (StandardPaths::global().userDirectory(StandardPathsType::PkgData) /
++         "kkc/rules")
++            .string());
+ 
+     // We can only create kkc object here after we called kkc_init().
+     model_.reset(kkc_language_model_load("sorted3", NULL));
+@@ -704,8 +727,8 @@ void KkcEngine::loadDictionary() {
+         if (mode == 1) {
+             std::string_view partialpath = path;
+             if (stringutils::consumePrefix(partialpath, "$XDG_DATA_DIRS/")) {
+-                path = StandardPaths::global().locate(StandardPathsType::Data,
+-                                                      partialpath);
++                path = utf8Path(StandardPaths::global().locate(
++                    StandardPathsType::Data, partialpath));
+             }
+             auto dict = makeGObjectUnique(reinterpret_cast<KkcDictionary *>(
+                 kkc_system_segment_dictionary_new(path.c_str(), "EUC-JP",
+@@ -718,9 +741,9 @@ void KkcEngine::loadDictionary() {
+         } else {
+             std::string_view partialpath = path;
+             if (stringutils::consumePrefix(partialpath, "$FCITX_CONFIG_DIR/")) {
+-                path = StandardPaths::global().userDirectory(
+-                           StandardPathsType::PkgData) /
+-                       partialpath;
++                path = utf8Path(StandardPaths::global().userDirectory(
++                                    StandardPathsType::PkgData) /
++                                partialpath);
+             }
+ 
+             auto userdict = makeGObjectUnique(reinterpret_cast<KkcDictionary *>(
+@@ -746,7 +769,7 @@ void KkcEngine::loadRule() {
+         StandardPaths::global().userDirectory(StandardPathsType::PkgData) /
+         "kkc/rules";
+     userRule_.reset(
+-        kkc_user_rule_new(meta, basePath.string().c_str(), "fcitx-kkc", NULL));
++        kkc_user_rule_new(meta, utf8Path(basePath).c_str(), "fcitx-kkc", NULL));
+ }
+ 
+ std::string KkcEngine::subMode(const InputMethodEntry & /*entry*/,

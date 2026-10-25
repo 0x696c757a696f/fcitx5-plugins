@@ -155,6 +155,7 @@ jobs:
           git apply --directory=fcitx5-cskk patches/cskk.windows.patch
           git apply --directory=fcitx5-jyutping patches/jyutping.patch
           git apply --directory=fcitx5-keyman patches/keyman.windows.patch
+          git apply --directory=fcitx5-kkc patches/kkc.windows.patch
           git apply --directory=fcitx5-m17n patches/m17n.windows.patch
           git apply --directory=fcitx5-rime patches/rime.log.patch
           git apply --directory=fcitx5-rime patches/rime.windows.patch
