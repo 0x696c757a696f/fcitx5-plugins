@@ -149,7 +149,7 @@ set_target_properties(Chewing_static PROPERTIES
 if (WIN32)
     # System libraries the Rust standard library needs.
     set_target_properties(Chewing_static PROPERTIES
-        INTERFACE_LINK_LIBRARIES "advapi32;bcrypt;kernel32;ntdll;userenv;ws2_32"
+        INTERFACE_LINK_LIBRARIES "advapi32;bcrypt;dbghelp;kernel32;ntdll;unwind;userenv;ws2_32"
     )
 endif()
 set(CHEWING_TARGET Chewing_static)

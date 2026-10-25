@@ -57,6 +57,8 @@ fi
 
 # libchewing
 if ! cached libchewing; then
+# A static libchewing has to export the Rust library it wraps.
+git -C deps/libchewing apply $ROOT/patches/windows/libchewing.patch
 configure libchewing -DBUILD_DOC=OFF -DWITH_SQLITE3=OFF
 cmake --build build/deps-$ARCH/libchewing
 install_dep libchewing
