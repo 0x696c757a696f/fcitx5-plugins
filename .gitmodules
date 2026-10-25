@@ -100,3 +100,9 @@
 [submodule "deps/cskk"]
 	path = deps/cskk
 	url = https://github.com/naokiri/cskk
+[submodule "deps/kyotocabinet"]
+	path = deps/kyotocabinet
+	url = https://github.com/deepin-community/kyotocabinet
+[submodule "deps/libpinyin"]
+	path = deps/libpinyin
+	url = https://github.com/libpinyin/libpinyin

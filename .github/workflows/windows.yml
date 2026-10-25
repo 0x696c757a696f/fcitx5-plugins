@@ -42,6 +42,7 @@ jobs:
             mingw-w64-clang-${{ matrix.pkg_arch }}-gettext-runtime
             mingw-w64-clang-${{ matrix.pkg_arch }}-gettext-tools
             mingw-w64-clang-${{ matrix.pkg_arch }}-go
+            mingw-w64-clang-${{ matrix.pkg_arch }}-glib2
             mingw-w64-clang-${{ matrix.pkg_arch }}-libiconv
             mingw-w64-clang-${{ matrix.pkg_arch }}-libthai
             mingw-w64-clang-${{ matrix.pkg_arch }}-librime
@@ -61,6 +62,9 @@ jobs:
           root=$(cygpath -m '${{ steps.msys2.outputs.msys2-location }}')
           echo "MSYS2_ROOT=$root" >> "$GITHUB_ENV"
           echo "$root/${{ matrix.msystem }}/bin" | tr '[:upper:]' '[:lower:]' >> "$GITHUB_PATH"
+          # GLib pulls in MSYS2's Python; keep the one with pefile and meson first.
+          cygpath -m "$pythonLocation" >> "$GITHUB_PATH"
+          cygpath -m "$pythonLocation/Scripts" >> "$GITHUB_PATH"
           # MSYS2 ships a trimmed go binary that needs GOROOT spelled out.
           echo "GOROOT=$root/$(echo '${{ matrix.msystem }}' | tr '[:upper:]' '[:lower:]')/lib/go" >> "$GITHUB_ENV"
           pip install dirhash meson pefile
@@ -123,6 +127,7 @@ jobs:
           git apply --directory=fcitx5-rime patches/rime.log.patch
           git apply --directory=fcitx5-rime patches/rime.windows.patch
           git apply --directory=fcitx5-table-other patches/table-other.patch
+          git apply --directory=fcitx5-zhuyin patches/zhuyin.windows.patch
           cmake -B build/windows-${{ matrix.arch }} -G Ninja \
             $(./scripts/windows-options.sh) \
             -DCMAKE_BUILD_TYPE=Release \

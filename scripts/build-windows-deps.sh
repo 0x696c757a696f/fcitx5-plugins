@@ -141,3 +141,38 @@ Cflags: -I\${includedir}
 PC
 package_dep cskk
 fi
+
+# kyotocabinet
+if ! cached kyotocabinet; then
+# The configure script needs a POSIX shell, so compile the library objects directly.
+git -C deps/kyotocabinet apply $(cygpath -m $ROOT)/patches/windows/kyotocabinet.patch
+kc_build=$(cygpath -m $ROOT/build/deps-$ARCH/kyotocabinet)
+kc_usr=$(cygpath -m $ROOT/build/deps-$ARCH/kyotocabinet-install/usr)
+rm -rf $kc_build $ROOT/build/deps-$ARCH/kyotocabinet-install
+mkdir -p $kc_build $kc_usr/include $kc_usr/lib
+for obj in kcutil kcthread kcfile kccompress kccompare kcmap kcregex \
+  kcdb kcplantdb kcprotodb kcstashdb kccachedb \
+  kchashdb kcdirdb kctextdb kcpolydb kcdbext kclangc; do
+  clang++ -std=gnu++11 -O2 -fsigned-char -DNDEBUG -D_FILE_OFFSET_BITS=64 -D_REENTRANT \
+    -Ideps/kyotocabinet -c deps/kyotocabinet/$obj.cc -o $kc_build/$obj.o
+done
+llvm-ar rcs $kc_usr/lib/libkyotocabinet.a $kc_build/*.o
+cp deps/kyotocabinet/k*.h $kc_usr/include
+package_dep kyotocabinet
+fi
+
+# libpinyin, which also provides libzhuyin
+if ! cached libpinyin; then
+git -C deps/libpinyin apply $(cygpath -m $ROOT)/patches/windows/libpinyin.patch
+configure libpinyin -DBUILD_UTILS=OFF -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_PREFIX_PATH=$(cygpath -m $USR)
+cmake --build build/deps-$ARCH/libpinyin -- -k 0
+install_dep libpinyin
+# On Windows libpinyin names its archive after the install prefix (usrpinyin.a), and
+# -lpinyin would resolve to the Pinyin addon target of chinese-addons, so rename it.
+mv $ROOT/build/deps-$ARCH/libpinyin-install/usr/lib/*pinyin.a $ROOT/build/deps-$ARCH/libpinyin-install/usr/lib/libpinyin-static.a
+for pc in $ROOT/build/deps-$ARCH/libpinyin-install/usr/lib/pkgconfig/*.pc; do
+  sed -i 's|-lpinyin$|-lpinyin-static|' $pc
+  sed -i "s|^prefix=.*|prefix=$(cygpath -m $USR)|; s|^exec_prefix=.*|exec_prefix=\${prefix}|; s|^libdir=.*|libdir=\${prefix}/lib|; s|^includedir=.*|includedir=\${prefix}/include|" $pc
+done
+package_dep libpinyin
+fi

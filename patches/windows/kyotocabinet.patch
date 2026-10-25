@@ -1,0 +1,57 @@
+diff --git a/kcfile.cc b/kcfile.cc
+index 6c0aaea..ac055cc 100644
+--- a/kcfile.cc
++++ b/kcfile.cc
+@@ -1520,7 +1520,7 @@ char* File::read_file(const std::string& path, int64_t* sp, int64_t limit) {
+   ::LARGE_INTEGER sbuf;
+   if (!::GetFileSizeEx(fh, &sbuf)) {
+     ::CloseHandle(fh);
+-    return false;
++    return NULL;
+   }
+   if (limit > (int64_t)sbuf.QuadPart) limit = sbuf.QuadPart;
+   char* buf = new char[limit+1];
+diff --git a/kcthread.cc b/kcthread.cc
+index 7e23a38..6393795 100644
+--- a/kcthread.cc
++++ b/kcthread.cc
+@@ -2005,7 +2005,7 @@ TSDKey::TSDKey(void (*dstr)(void*)) : opq_(NULL) {
+ TSDKey::~TSDKey() {
+ #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
+   _assert_(true);
+-  ::DWORD key = (::DWORD)opq_;
++  ::DWORD key = (::DWORD)(uintptr_t)opq_;
+   ::TlsFree(key);
+ #else
+   _assert_(true);
+@@ -2022,7 +2022,7 @@ TSDKey::~TSDKey() {
+ void TSDKey::set(void* ptr) {
+ #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
+   _assert_(true);
+-  ::DWORD key = (::DWORD)opq_;
++  ::DWORD key = (::DWORD)(uintptr_t)opq_;
+   if (!::TlsSetValue(key, ptr)) std::runtime_error("TlsSetValue");
+ #else
+   _assert_(true);
+@@ -2039,7 +2039,7 @@ void TSDKey::set(void* ptr) {
+ void* TSDKey::get() const {
+ #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
+   _assert_(true);
+-  ::DWORD key = (::DWORD)opq_;
++  ::DWORD key = (::DWORD)(uintptr_t)opq_;
+   return ::TlsGetValue(key);
+ #else
+   _assert_(true);
+diff --git a/myconf.h b/myconf.h
+index e8b9a6e..110f431 100644
+--- a/myconf.h
++++ b/myconf.h
+@@ -125,7 +125,7 @@
+ #define _KC_LZMA       0
+ #endif
+ 
+-#if defined(_SYS_MSVC_)
++#if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
+ #define _KC_PXREGEX    0
+ #else
+ #define _KC_PXREGEX    1
