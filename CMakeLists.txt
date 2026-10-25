@@ -6,6 +6,12 @@ endif()
 
 project(fcitx5-plugins VERSION 0.1.0)
 
+if (WIN32 AND ARCH STREQUAL CMAKE_HOST_SYSTEM_PROCESSOR)
+    # Setting CMAKE_SYSTEM_NAME in the toolchain marks every build as cross compiling,
+    # which stops custom commands from running tools built in the tree (libime data, tables).
+    set(CMAKE_CROSSCOMPILING FALSE)
+endif()
+
 option(ANTHY "" ON)
 option(BAMBOO "" ON)
 option(CHEWING "" ON)
