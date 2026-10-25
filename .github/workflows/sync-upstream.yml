@@ -1,0 +1,56 @@
+name: Sync upstream
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+  issues: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: master
+          fetch-depth: 0
+
+      - name: Apply upstream changes
+        id: apply
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch https://github.com/fcitx-contrib/fcitx5-plugins master
+          old=$(cat .upstream-commit)
+          new=$(git rev-parse FETCH_HEAD)
+          if [[ "$old" == "$new" ]]; then
+            echo "Already at upstream $new."
+            exit 0
+          fi
+          # Workflows are Windows-only here and maintained in this fork, so upstream's are skipped.
+          git diff --binary "$old" "$new" -- . ':!.github' ':!renovate.json' > upstream.patch
+          if [[ -s upstream.patch ]] && ! git apply --index -3 upstream.patch; then
+            body="Applying fcitx-contrib/fcitx5-plugins $old..$new conflicts with this fork. Resolve it by hand and update .upstream-commit."
+            if [[ -z "$(gh issue list --state open --search 'Upstream sync conflict in:title' --json number -q '.[].number')" ]]; then
+              gh issue create --title 'Upstream sync conflict' --body "$body"
+            fi
+            exit 1
+          fi
+          rm upstream.patch
+          echo "$new" > .upstream-commit
+          git add .upstream-commit
+          git commit -m "Sync upstream fcitx-contrib/fcitx5-plugins@${new:0:7}" \
+            -m "Upstream range: $old..$new"
+          git push --force origin HEAD:refs/heads/upstream-sync
+          echo "pushed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Test the synced branch
+        if: steps.apply.outputs.pushed == 'true'
+        run: gh workflow run ci.yml --ref upstream-sync

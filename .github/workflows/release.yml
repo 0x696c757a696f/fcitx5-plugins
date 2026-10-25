@@ -1,0 +1,37 @@
+name: Windows release
+
+on:
+  workflow_call:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v8
+        with:
+          pattern: artifact-windows*
+          merge-multiple: true
+          path: dist
+
+      - name: Release
+        working-directory: dist
+        run: |
+          sha=${{ github.sha }}
+          previous=$(gh release view windows --json targetCommitish -q .targetCommitish 2>/dev/null || true)
+          if [[ "$previous" == "$sha" ]]; then
+            echo "Commit $sha is already released."
+            exit 0
+          fi
+          sha256sum *.tar.bz2 > SHA256SUMS
+          tag="windows-$(date -u +%Y%m%d)-${GITHUB_RUN_NUMBER}"
+          notes="Windows plugins (x86_64, arm64) built from $sha."
+          gh release create "$tag" --target "$sha" --title "Windows $tag" --notes "$notes" *.tar.bz2 SHA256SUMS
+          gh release delete windows --cleanup-tag --yes 2>/dev/null || true
+          gh release create windows --target "$sha" --prerelease --title "Windows Build (latest)" \
+            --notes "$notes Same files as $tag." *.tar.bz2 SHA256SUMS

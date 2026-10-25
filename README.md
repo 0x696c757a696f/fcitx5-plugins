@@ -1,9 +1,14 @@
 # Fcitx5 plugins
 
-Build plugins for
-[fcitx5-macos](https://github.com/fcitx/fcitx5-macos),
-[fcitx5-windows](https://github.com/fcitx-contrib/fcitx5-windows) and
-[fcitx5-js](https://github.com/fcitx-contrib/fcitx5-js).
+Windows (x86_64 and arm64) plugin builds for
+[fcitx5-windows-next](https://github.com/0x696c757a696f/fcitx5-windows-next),
+forked from [fcitx-contrib/fcitx5-plugins](https://github.com/fcitx-contrib/fcitx5-plugins).
+
+* Every build of `master` is published as a dated `windows-YYYYMMDD-N` release,
+  and the `windows` release always points to the newest one.
+* `Sync upstream` applies new upstream commits (outside `.github`) every day on the
+  `upstream-sync` branch. Once the Windows build passes there, `master` is fast-forwarded and released.
+* Dependabot updates the GitHub Actions. Its pull requests are merged when the build passes.
 
 ## Plugins
 
