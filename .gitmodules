@@ -94,3 +94,9 @@
 [submodule "deps/anthy-cmake"]
 	path = deps/anthy-cmake
 	url = https://github.com/fcitx5-android/anthy-cmake
+[submodule "deps/libxkbcommon"]
+	path = deps/libxkbcommon
+	url = https://github.com/xkbcommon/libxkbcommon
+[submodule "deps/cskk"]
+	path = deps/cskk
+	url = https://github.com/naokiri/cskk
