@@ -1,0 +1,16 @@
+diff --git a/src/unix/fcitx5/mozc_engine_factory.cc b/src/unix/fcitx5/mozc_engine_factory.cc
+index 7b51b3d..d480e03 100644
+--- a/src/unix/fcitx5/mozc_engine_factory.cc
++++ b/src/unix/fcitx5/mozc_engine_factory.cc
+@@ -29,6 +29,11 @@
+ #include "mozc_engine.h"
+ #include "unix/fcitx5/i18nwrapper.h"
+ 
++#ifdef _WIN32
++// _fullpath allocates with malloc like realpath when given no buffer.
++#define realpath(path, resolved) _fullpath(resolved, path, 0)
++#endif
++
+ namespace fcitx {
+ class MozcEngineFactory : public AddonFactory {
+  public:

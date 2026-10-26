@@ -225,3 +225,30 @@ rm -rf build/deps-$ARCH/libkkc-install
 DESTDIR=$(cygpath -m $ROOT/build/deps-$ARCH/libkkc-install) meson install -C build/deps-$ARCH/libkkc
 package_dep libkkc
 fi
+
+# libmozc from fcitx5-mozc's CMake build, with the dictionary embedded
+if ! cached libmozc; then
+# Mozc forces LF line endings while the patches are checked out with CRLF.
+git -C fcitx5-mozc apply --ignore-whitespace $(cygpath -m $ROOT)/patches/windows/libmozc.patch
+git -C fcitx5-mozc/mozc apply --ignore-whitespace $(cygpath -m $ROOT)/patches/windows/mozc.patch
+git -C fcitx5-mozc/protobuf apply --ignore-whitespace ../patches/protobuf.patch
+# Git checks fcitx5-mozc out with CRLF, which bash rejects in its generator scripts.
+sed -i 's/\r$//' fcitx5-mozc/scripts/*.sh
+mozc_data=$ROOT/cache/mozc_data.inc
+# curl may be a native MSYS2 build, which needs a Windows path.
+[[ -f $mozc_data ]] || curl --retry 3 -fsSL -o $(cygpath -m $mozc_data) https://github.com/fcitx-contrib/fcitx5-mozc/releases/download/latest/mozc_data.inc
+mozc_build=build/deps-$ARCH/libmozc
+mkdir -p $mozc_build/data_manager/oss
+cp $mozc_data $mozc_build/data_manager/oss/mozc_data.inc
+cmake -S fcitx5-mozc -B $mozc_build -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_INSTALL_PREFIX=/usr \
+  -DBUILD_MOZC_ADDON=OFF \
+  -DWIL_INCLUDE_DIR=$(cygpath -m $ROOT/deps/wil/include)
+cmake --build $mozc_build
+install_dep libmozc
+# Plugins link one archive of all the absl objects, as on macOS.
+find $mozc_build/abseil-cpp -name '*.obj' | sort > $mozc_build/absl-objects.txt
+llvm-ar rc $mozc_build-install/usr/lib/libabsl.a @$mozc_build/absl-objects.txt
+package_dep libmozc
+fi

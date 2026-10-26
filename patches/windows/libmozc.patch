@@ -1,0 +1,151 @@
+diff --git a/cmake/base.cmake b/cmake/base.cmake
+index 2246dbc..4a73dc9 100644
+--- a/cmake/base.cmake
++++ b/cmake/base.cmake
+@@ -52,7 +52,7 @@ set(version_def_h "${PROJECT_BINARY_DIR}/base/version_def.h")
+ 
+ add_custom_command(
+     OUTPUT "${version_def_h}"
+-    COMMAND "${PROJECT_SOURCE_DIR}/scripts/gen_version_def.sh" "${PROJECT_BINARY_DIR}/base/mozc_version.txt" "${version_def_h}"
++    COMMAND bash "${PROJECT_SOURCE_DIR}/scripts/gen_version_def.sh" "${PROJECT_BINARY_DIR}/base/mozc_version.txt" "${version_def_h}"
+     WORKING_DIRECTORY "${MOZC_SRC_DIR}"
+     COMMENT "Generating version_def.h"
+ )
+@@ -102,4 +102,9 @@ if (APPLE)
+     list(APPEND MOZC_BASE_SRCS
+         "${PROJECT_SOURCE_DIR}/src/mac_util.mm"
+     )
++elseif (WIN32)
++    list(APPEND MOZC_BASE_SRCS
++        "${MOZC_SRC_DIR}/base/win32/wide_char.cc"
++        "${PROJECT_SOURCE_DIR}/src/win32_util.cc"
++    )
+ endif()
+diff --git a/cmake/dictionary.cmake b/cmake/dictionary.cmake
+index 6bb121d..4895466 100644
+--- a/cmake/dictionary.cmake
++++ b/cmake/dictionary.cmake
+@@ -3,7 +3,7 @@ set(pos_matcher_impl_inc "${PROJECT_BINARY_DIR}/dictionary/pos_matcher_impl.inc"
+ 
+ add_custom_command(
+     OUTPUT "${pos_matcher_impl_inc}"
+-    COMMAND "${PROJECT_SOURCE_DIR}/scripts/gen_pos_matcher_code.sh" "${pos_matcher_impl_inc}"
++    COMMAND bash "${PROJECT_SOURCE_DIR}/scripts/gen_pos_matcher_code.sh" "${pos_matcher_impl_inc}"
+     WORKING_DIRECTORY "${MOZC_SRC_DIR}"
+     COMMENT "Generating pos_matcher_impl.inc"
+ )
+@@ -16,7 +16,7 @@ set(pos_map_inc "${PROJECT_BINARY_DIR}/dictionary/pos_map.inc")
+ 
+ add_custom_command(
+     OUTPUT "${pos_map_inc}"
+-    COMMAND "${PROJECT_SOURCE_DIR}/scripts/gen_pos_map.sh" "${pos_map_inc}"
++    COMMAND bash "${PROJECT_SOURCE_DIR}/scripts/gen_pos_map.sh" "${pos_map_inc}"
+     WORKING_DIRECTORY "${MOZC_SRC_DIR}"
+     COMMENT "Generating pos_map.inc"
+ )
+@@ -28,7 +28,7 @@ set(pos_cost_map_inc "${PROJECT_BINARY_DIR}/dictionary/pos_cost_map.inc")
+ 
+ add_custom_command(
+     OUTPUT "${pos_cost_map_inc}"
+-    COMMAND "${PROJECT_SOURCE_DIR}/scripts/gen_pos_cost_map.sh" "${pos_cost_map_inc}"
++    COMMAND bash "${PROJECT_SOURCE_DIR}/scripts/gen_pos_cost_map.sh" "${pos_cost_map_inc}"
+     WORKING_DIRECTORY "${MOZC_SRC_DIR}"
+     COMMENT "Generating pos_cost_map.inc"
+ )
+diff --git a/cmake/mozc-static.cmake b/cmake/mozc-static.cmake
+index ed79ece..1e60ba2 100644
+--- a/cmake/mozc-static.cmake
++++ b/cmake/mozc-static.cmake
+@@ -25,6 +25,20 @@ target_include_directories(mozc-static PRIVATE
+ # Mozc requires char to be unsigned, as it's used as array index.
+ target_compile_options(mozc-static PRIVATE -funsigned-char)
+ 
++if (WIN32)
++    # The definitions Mozc's own Windows build uses.
++    target_compile_definitions(mozc-static PRIVATE
++        -DWINVER=0x0A00
++        -D_WIN32_WINNT=0x0A00
++        -DNO_SHLWAPI_STRFCNS
++        -DPSAPI_VERSION=2
++        -DSTRSAFE_NO_DEPRECATE
++        -DUNICODE
++        -D_UNICODE
++    )
++    target_include_directories(mozc-static PRIVATE "${WIL_INCLUDE_DIR}")
++endif()
++
+ target_compile_definitions(mozc-static PRIVATE
+     -DMOZC_DATASET_MAGIC_NUMBER_LENGTH=7
+ )
+diff --git a/src/win32_util.cc b/src/win32_util.cc
+new file mode 100644
+index 0000000..49bba8b
+--- /dev/null
++++ b/src/win32_util.cc
+@@ -0,0 +1,66 @@
++// The parts of base/win32/win_util.cc and win_sandbox.cc that libmozc uses,
++// without ATL, which MinGW doesn't provide.
++#include <windows.h>
++
++#include <sddl.h>
++#include <shlobj.h>
++
++#include "base/win32/wide_char.h"
++#include "base/win32/win_sandbox.h"
++#include "base/win32/win_util.h"
++
++namespace mozc {
++namespace {
++
++std::optional<std::string> GetKnownFolderPath(REFKNOWNFOLDERID id) {
++    wil::unique_cotaskmem_string path;
++    if (FAILED(::SHGetKnownFolderPath(id, KF_FLAG_DEFAULT, nullptr, &path))) {
++        return std::nullopt;
++    }
++    return win32::WideToUtf8(path.get());
++}
++
++} // namespace
++
++const std::optional<std::wstring> &WinUtil::GetSystem32Path() {
++    static const std::optional<std::wstring> path =
++        []() -> std::optional<std::wstring> {
++        wchar_t buffer[MAX_PATH];
++        const UINT size = ::GetSystemDirectoryW(buffer, MAX_PATH);
++        if (size == 0 || size >= MAX_PATH) {
++            return std::nullopt;
++        }
++        return std::wstring(buffer, size);
++    }();
++    return path;
++}
++
++const std::optional<std::string> &WinUtil::GetProgramFilesX86Path() {
++    static const std::optional<std::string> path =
++        GetKnownFolderPath(FOLDERID_ProgramFilesX86);
++    return path;
++}
++
++const std::optional<std::string> &WinUtil::GetLocalAppDataPath() {
++    static const std::optional<std::string> path =
++        GetKnownFolderPath(FOLDERID_LocalAppData);
++    return path;
++}
++
++wil::unique_hlocal_security_descriptor
++WinSandbox::MakeSecurityDescriptor(ObjectSecurityType) {
++    // Full access for the owner, read access for everyone else.
++    wil::unique_hlocal_security_descriptor descriptor;
++    ::ConvertStringSecurityDescriptorToSecurityDescriptorW(
++        L"D:(A;;GA;;;OW)(A;;GA;;;SY)(A;;GR;;;WD)", SDDL_REVISION_1,
++        wil::out_param_ptr<PSECURITY_DESCRIPTOR *>(descriptor), nullptr);
++    return descriptor;
++}
++
++// Fcitx doesn't run Mozc inside app containers.
++bool WinSandbox::EnsureAllApplicationPackagesPermisssion(
++    std::wstring_view, AppContainerVisibilityType) {
++    return true;
++}
++
++} // namespace mozc
