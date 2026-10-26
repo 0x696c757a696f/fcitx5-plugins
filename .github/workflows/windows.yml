@@ -66,17 +66,20 @@ jobs:
         if: matrix.arch == 'x86_64'
         shell: msys2 {0}
         run: |
-          # ccache comes from the current repository and needs the newer C++ runtime, so it keeps
-          # a private copy of today's DLLs and is found on PATH there instead.
+          # These build tools come from the current repository and need the newer C++ runtime and
+          # LLVM, so they keep a private copy of today's prefix and are found on PATH there instead.
           host=$(cygpath -u "$RUNNER_TEMP")/host-tools
           mkdir -p "$host"
-          cp /clang64/bin/ccache.exe /clang64/bin/*.dll "$host"/
-          rm /clang64/bin/ccache.exe
-          cygpath -m "$host" >> "$GITHUB_PATH"
+          for pkg in ccache cbindgen rust; do pacman -Qlq "mingw-w64-clang-x86_64-$pkg"; done |
+            grep -v '/$' | sed 's|^/clang64/||' > "$host.files"
+          tar -C /clang64 -cf - -T "$host.files" | tar -C "$host" -xf -
+          cp -n /clang64/bin/*.dll "$host/bin/"
+          grep '^bin/.*\.exe$' "$host.files" | sed 's|^|/clang64/|' | xargs rm
+          cygpath -m "$host/bin" >> "$GITHUB_PATH"
           urls=$(sed 's|^\(.*\)=\(.*\)$|https://repo.msys2.org/mingw/clang64/\1-\2-any.pkg.tar.zst|' windows-runtime-pins.txt)
           pacman -U --noconfirm $urls
-          "$host/ccache.exe" --version | head -n 1
-          for tool in clang cmake ninja rustc cargo cbindgen valac pkg-config; do
+          export PATH="$PATH:$host/bin"
+          for tool in clang cmake ninja ccache rustc cargo cbindgen valac pkg-config; do
             "$tool" --version 2>&1 | head -n 1 || { echo "$tool does not start after pinning"; exit 1; }
           done
           go version
