@@ -270,7 +270,7 @@ endif()
 add_subdirectory(fcitx5-mozc)
 target_include_directories(mozc PRIVATE "${PREBUILDER_INCLUDE_DIR}/mozc")
 target_compile_definitions(mozc PRIVATE -DMOZC_DISABLE_SESSION_WATCHDOG)
-if (EMSCRIPTEN)
+if (EMSCRIPTEN OR WIN32)
     target_include_directories(mozc PRIVATE
         "${PREBUILDER_INCLUDE_DIR}"
         "${PREBUILDER_INCLUDE_DIR}/Fcitx5/Module"
