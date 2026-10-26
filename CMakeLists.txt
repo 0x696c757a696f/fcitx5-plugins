@@ -265,7 +265,7 @@ set(MOZC_TARGET
 if (APPLE)
     list(APPEND MOZC_TARGET "-Wl,-framework,CoreFoundation")
 elseif (WIN32)
-    list(APPEND MOZC_TARGET advapi32 bcrypt crypt32 dbghelp ole32 shell32 user32)
+    list(APPEND MOZC_TARGET advapi32 bcrypt crypt32 dbghelp imm32 ole32 pthread shell32 user32)
 endif()
 add_subdirectory(fcitx5-mozc)
 target_include_directories(mozc PRIVATE "${PREBUILDER_INCLUDE_DIR}/mozc")
