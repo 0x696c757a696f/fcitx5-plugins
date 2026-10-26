@@ -107,10 +107,12 @@ package() {
   python $ROOT/scripts/generate-descriptor.py "${input_methods[@]}"
 
   if [[ $PLATFORM == "macos" || $PLATFORM == "windows" ]]; then
-    # --no-xattrs fixes tar: Special header too large: %llu
-    tar cjf ../../$plugin$POSTFIX.tar.bz2 --no-xattrs *
+    local tar_options=(--no-xattrs) # fixes tar: Special header too large: %llu
+    # Windows consumers repackage the archives, so store regular files only.
+    [[ $PLATFORM == "windows" ]] && tar_options+=(--dereference)
+    tar cjf ../../$plugin$POSTFIX.tar.bz2 "${tar_options[@]}" *
     cd ../data
-    tar cjf ../../$plugin-any.tar.bz2 --no-xattrs *
+    tar cjf ../../$plugin-any.tar.bz2 "${tar_options[@]}" *
   else
     rm -f ../../$plugin$POSTFIX.zip # zip adds content to existing zip file.
     zip -r ../../$plugin$POSTFIX.zip *
