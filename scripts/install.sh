@@ -108,8 +108,9 @@ package() {
 
   if [[ $PLATFORM == "macos" || $PLATFORM == "windows" ]]; then
     local tar_options=(--no-xattrs) # fixes tar: Special header too large: %llu
-    # Windows consumers repackage the archives, so store regular files only.
-    [[ $PLATFORM == "windows" ]] && tar_options+=(--dereference)
+    # Windows consumers repackage the archives, so store regular files only:
+    # copy symlink and hardlink targets instead of storing links.
+    [[ $PLATFORM == "windows" ]] && tar_options+=(--dereference --hard-dereference)
     tar cjf ../../$plugin$POSTFIX.tar.bz2 "${tar_options[@]}" *
     cd ../data
     tar cjf ../../$plugin-any.tar.bz2 "${tar_options[@]}" *
