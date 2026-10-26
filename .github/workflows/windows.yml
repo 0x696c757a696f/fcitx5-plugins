@@ -60,6 +60,15 @@ jobs:
             mingw-w64-clang-${{ matrix.pkg_arch }}-vala
             mingw-w64-clang-${{ matrix.pkg_arch }}-zstd
 
+      # Plugins load into the fcitx5-windows-next engine, so on x86_64 the C++ runtime and the
+      # shared libraries it also ships must be the exact builds it pins.
+      - name: Match the fcitx5-windows-next toolchain and libraries
+        if: matrix.arch == 'x86_64'
+        shell: msys2 {0}
+        run: |
+          urls=$(sed 's|^\(.*\)=\(.*\)$|https://repo.msys2.org/mingw/clang64/\1-\2-any.pkg.tar.zst|' windows-runtime-pins.txt)
+          pacman -U --noconfirm $urls
+
       - name: Set up environment
         id: env
         shell: bash
@@ -83,7 +92,7 @@ jobs:
         id: fcitx5-cache
         with:
           path: build/fcitx5-install-${{ matrix.arch }}
-          key: fcitx5-windows-${{ matrix.arch }}-${{ steps.env.outputs.fcitx5 }}-${{ hashFiles('.github/workflows/windows.yml') }}
+          key: fcitx5-windows-${{ matrix.arch }}-${{ steps.env.outputs.fcitx5 }}-${{ hashFiles('.github/workflows/windows.yml', 'windows-runtime-pins.txt') }}
 
       - uses: actions/cache/restore@v6
         with:
@@ -123,7 +132,7 @@ jobs:
         id: deps-key
         shell: bash
         run: |
-          key=$( (git submodule status --recursive deps fcitx5-mozc; git ls-files -s scripts/build-windows-deps.sh patches/windows) | sha256sum | cut -c1-16)
+          key=$( (git submodule status --recursive deps fcitx5-mozc; git ls-files -s scripts/build-windows-deps.sh patches/windows windows-runtime-pins.txt) | sha256sum | cut -c1-16)
           echo "key=$key" >> "$GITHUB_OUTPUT"
 
       - uses: actions/cache@v6
