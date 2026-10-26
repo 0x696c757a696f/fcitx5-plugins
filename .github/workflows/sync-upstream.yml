@@ -53,21 +53,27 @@ jobs:
           git commit -m "Sync upstream fcitx-contrib/fcitx5-plugins@${new:0:7}" \
             -m "Upstream range: $old..$new"
 
-      - name: Follow the fcitx5 pin of fcitx5-windows-next
+      - name: Follow the fcitx5 and MSYS2 pins of fcitx5-windows-next
         run: |
-          pin=$(curl -fsSL https://raw.githubusercontent.com/0x696c757a696f/fcitx5-windows-next/main/tools/bootstrap-fcitx.ps1 |
-            sed -n "s/.*Name = 'fcitx5';.*Commit = '\([0-9a-f]\{40\}\)'.*/\1/p")
-          if [[ -z "$pin" ]]; then
-            echo "::error::Could not read the fcitx5 pin from fcitx5-windows-next."
+          curl -fsSL -o bootstrap-fcitx.ps1 \
+            https://raw.githubusercontent.com/0x696c757a696f/fcitx5-windows-next/main/tools/bootstrap-fcitx.ps1
+          pin=$(sed -n "s/.*Name = 'fcitx5';.*Commit = '\([0-9a-f]\{40\}\)'.*/\1/p" bootstrap-fcitx.ps1)
+          sed -n "s/^ *'\(mingw-w64-clang-x86_64-[^=']*=[^']*\)',\{0,1\}$/\1/p" bootstrap-fcitx.ps1 > runtime-pins.txt
+          rm bootstrap-fcitx.ps1
+          if [[ -z "$pin" || ! -s runtime-pins.txt ]]; then
+            echo "::error::Could not read the pins from fcitx5-windows-next."
             exit 1
           fi
-          current=$(git rev-parse HEAD:fcitx5)
-          if [[ "$pin" == "$current" ]]; then
-            echo "fcitx5 already at $pin."
-            exit 0
+          if [[ "$pin" != "$(git rev-parse HEAD:fcitx5)" ]]; then
+            git update-index --cacheinfo "160000,$pin,fcitx5"
+            git commit -m "Update fcitx5 to ${pin:0:7}" -m "Follows fcitx5-windows-next tools/bootstrap-fcitx.ps1."
           fi
-          git update-index --cacheinfo "160000,$pin,fcitx5"
-          git commit -m "Update fcitx5 to ${pin:0:7}" -m "Follows fcitx5-windows-next tools/bootstrap-fcitx.ps1."
+          mv runtime-pins.txt windows-runtime-pins.txt
+          if ! git diff --quiet -- windows-runtime-pins.txt; then
+            git add windows-runtime-pins.txt
+            git commit -m "Update the MSYS2 pins to match fcitx5-windows-next" \
+              -m "Follows fcitx5-windows-next tools/bootstrap-fcitx.ps1."
+          fi
 
       - name: Push and test
         run: |
