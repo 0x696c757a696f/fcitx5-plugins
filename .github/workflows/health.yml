@@ -1,0 +1,88 @@
+name: Automation health
+
+# Daily check that the unattended workflows still work. A workflow whose latest
+# run on master failed, or a Dependabot PR that has waited more than a week,
+# gets an issue; the workflow issue is closed again once it passes.
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Report failing workflows and stuck updates
+        run: |
+          set -euo pipefail
+
+          open_issue() {
+            export TITLE=$1
+            gh issue list --state open --search "in:title \"$TITLE\"" --json number,title \
+              --jq '.[] | select(.title == env.TITLE) | .number' | head -n1
+          }
+          ensure_issue() {
+            local number
+            number=$(open_issue "$1")
+            if [ -z "$number" ]; then
+              gh issue create --title "$1" --body "$2"
+            fi
+          }
+          resolve_issue() {
+            local number
+            number=$(open_issue "$1")
+            if [ -n "$number" ]; then
+              gh issue close "$number" --comment "$2"
+            fi
+          }
+
+          for workflow in ci.yml sync-upstream.yml; do
+            latest=$(gh run list --workflow "$workflow" --branch master --limit 20 \
+              --json status,conclusion,url,workflowName --jq '
+                [.[] | select(.status == "completed") |
+                 select(.conclusion == "success" or .conclusion == "failure" or
+                        .conclusion == "timed_out" or .conclusion == "startup_failure")][0] //
+                empty | [.conclusion, .url, .workflowName] | @tsv')
+            if [ -z "$latest" ]; then
+              echo "$workflow: no finished run on master yet."
+              continue
+            fi
+            IFS=$'\t' read -r conclusion url name <<< "$latest"
+            echo "$workflow: $conclusion"
+            if [ "$conclusion" = success ]; then
+              resolve_issue "Automation failing: $name" "Passing again: $url"
+            else
+              ensure_issue "Automation failing: $name" \
+                "The latest run of $workflow on master ended with $conclusion: $url"
+            fi
+          done
+
+          # Upstream syncs are tested on this branch before master moves.
+          latest=$(gh run list --workflow ci.yml --branch upstream-sync --limit 1 \
+            --json status,conclusion,url --jq '.[0] // empty | select(.status == "completed") |
+              [.conclusion, .url] | @tsv')
+          if [ -n "$latest" ]; then
+            IFS=$'\t' read -r conclusion url <<< "$latest"
+            if [ "$conclusion" = failure ] || [ "$conclusion" = timed_out ]; then
+              ensure_issue "Upstream sync does not build" \
+                "The last build of the upstream-sync branch failed, so master stays on the previous upstream: $url"
+            elif [ "$conclusion" = success ]; then
+              resolve_issue "Upstream sync does not build" "Builds again: $url"
+            fi
+          fi
+
+          week_ago=$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ)
+          gh pr list --state open --app dependabot --json number,url,createdAt \
+            --jq ".[] | select(.createdAt < \"$week_ago\") | [.number, .url] | @tsv" |
+          while IFS=$'\t' read -r pr url; do
+            ensure_issue "Dependabot update #$pr needs attention" \
+              "$url has waited more than a week; its CI run did not pass, so it was not merged."
+          done
